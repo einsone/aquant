@@ -1,0 +1,114 @@
+# markdownlint 配置
+# 规则参考: https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+
+default: true
+
+# MD003: 标题风格
+MD003:
+  style: atx # 使用 # 风格
+
+# MD004: 无序列表标记
+MD004:
+  style: dash # 使用 -
+
+# MD007: 无序列表缩进
+MD007:
+  indent: 2
+
+# MD009: 行尾空格
+MD009:
+  br_spaces: 0 # 不允许尾部空格换行，使用 <br> 代替
+
+# MD010: 硬制表符
+MD010:
+  code_blocks: false # 代码块允许 tab
+
+# MD012: 多余空行
+MD012:
+  maximum: 1
+
+# MD013: 行长度限制
+MD013: false # 关闭，让编辑器 soft wrap，避免 hard wrap 在 diff 中产生噪音
+
+# MD024: 重复标题
+MD024:
+  siblings_only: true # 仅同级不允许重复
+
+# MD026: 标题末尾标点
+MD026:
+  punctuation: ".,;:!。，；：！"
+
+# MD029: 有序列表序号
+MD029:
+  style: one_or_ordered # 允许 1. 1. 1. 或 1. 2. 3.
+
+# MD033: 内联 HTML
+MD033:
+  allowed_elements:
+    - br
+    - kbd
+    - sub
+    - sup
+    - font
+    - details
+    - summary
+
+# MD034: 裸 URL
+MD034: true # 要求使用 [text](url) 格式
+
+# MD035: 水平线风格
+MD035:
+  style: "---"
+
+# MD036: 强调代替标题
+MD036: true # 不允许用粗体代替标题，确保 TOC 和屏幕阅读器可识别
+
+# MD040: 代码块语言标识
+MD040: true # 强制指定语言
+
+# MD041: 首行标题
+MD041: true # 每个文档应以 h1 开头
+
+# MD044: 专有名词大小写
+MD044:
+  names:
+    - GitHub
+    - Docker
+    - Kubernetes
+  code_blocks: false
+
+# MD045: 图片 alt 文本
+MD045: true # 强制 alt
+
+# MD046: 代码块风格
+MD046:
+  style: fenced # 使用 ```
+
+# MD047: 文件末尾空行
+MD047: true
+
+# MD048: 代码块围栏风格
+MD048:
+  style: backtick # 使用 ``` 而非 ~~~
+
+# MD049: 斜体风格
+MD049:
+  style: asterisk # *斜体*
+
+# MD050: 粗体风格
+MD050:
+  style: asterisk # **粗体**
+
+# MD055: 表格分隔符风格
+MD055:
+  style: leading_and_trailing # | col1 | col2 |
+
+# MD056: 表格列数一致
+MD056: true
+
+# MD058: 表格前后空行
+MD058: true
+
+# MD060: 代码间距风格
+MD060:
+  style: compact

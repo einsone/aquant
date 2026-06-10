@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import logging
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
 from aquant.adjustment.corporate import BonusShares, CashDividend, RightsIssue
+from aquant.log import get_logger
 
 
 if TYPE_CHECKING:
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from aquant.matching.cost import CostModel
     from aquant.portfolio.portfolio import Portfolio
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class Adjuster:
@@ -101,7 +101,7 @@ class Adjuster:
             elif isinstance(action, RightsIssue):
                 # 配股需要持股人主动出资认购，框架不自动处理。
                 # 通过 on_adjustment 回调通知策略，由策略自行决定是否认购。
-                logger.debug("配股事件已通知策略，框架不自动处理认购：%s", action)
+                logger.debug("配股事件已通知策略，框架不自动处理认购", action=action)
 
     def force_close(self, event: DelistEvent, portfolio: Portfolio, bars: dict[str, DayBar], cost_model: CostModel) -> None:
         """退市强制平仓，在引擎的 DELIST 阶段调用。

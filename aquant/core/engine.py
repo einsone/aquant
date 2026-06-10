@@ -153,12 +153,16 @@ class Engine:
                 context = self._build_context(event.date)
                 if self._day_is_warmup:
                     self._warmup_remaining -= 1
-                    self._strategy.on_bar(context)
-                else:
+                # warmup_period 语义：需要 N 天历史数据，第 N 天即可生成信号并在 T+1 执行。
+                # 递减后 _warmup_remaining == 0 表示今天是最后一个预热日，已满足数据要求，
+                # 应缓存信号；_warmup_remaining > 0 表示数据仍不足，丢弃。
+                if not self._day_is_warmup or self._warmup_remaining == 0:
                     raw_signals = self._strategy.on_bar(context)
                     # 复制 Signal 对象再填入 signal_date，避免改变策略持有的引用
                     # meta 做浅拷贝，防止策略后续修改 meta dict 影响缓存的信号
                     self._pending_signals = [Signal(symbol=s.symbol, weight=s.weight, signal_date=event.date, meta=dict(s.meta)) for s in raw_signals]
+                else:
+                    self._strategy.on_bar(context)
 
             elif event.phase == Phase.VALUATION:
                 if not self._day_is_warmup:

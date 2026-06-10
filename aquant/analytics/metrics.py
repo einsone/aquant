@@ -36,14 +36,18 @@ def sharpe(returns: pl.Series, risk_free: float = 0.0, trading_days: int = 252) 
 
 
 def max_drawdown(nav: pl.Series) -> tuple[float, int]:
-    """返回 (最大回撤比例, 持续时间（交易日数）)。"""
+    """返回 (最大回撤比例, 持续时间（交易日数）)。
+
+    持续时间定义为：从最大回撤对应峰值到净值重新回到该峰值水平的天数。
+    若回测结束时仍未恢复，则持续时间为峰值到序列末尾的天数。
+    """
     if len(nav) < 2:
         return 0.0, 0
 
     peak = nav[0]
     max_dd = 0.0
-    max_duration = 0
     peak_idx = 0
+    max_dd_peak_idx = 0  # 最大回撤对应的峰值位置
 
     for i, val in enumerate(nav):
         if val > peak:
@@ -52,9 +56,20 @@ def max_drawdown(nav: pl.Series) -> tuple[float, int]:
         dd = float((peak - val) / peak)
         if dd > max_dd:
             max_dd = dd
-            max_duration = i - peak_idx
+            max_dd_peak_idx = peak_idx
 
-    return max_dd, max_duration
+    if max_dd == 0.0:
+        return 0.0, 0
+
+    # 从最大回撤的峰值向后找净值首次恢复到该峰值水平的位置
+    peak_val = float(nav[max_dd_peak_idx])
+    recovery_idx = len(nav) - 1  # 默认：回测结束仍未恢复
+    for j in range(max_dd_peak_idx + 1, len(nav)):
+        if float(nav[j]) >= peak_val:
+            recovery_idx = j
+            break
+
+    return max_dd, recovery_idx - max_dd_peak_idx
 
 
 def calmar(nav: pl.Series, trading_days: int = 252) -> float:

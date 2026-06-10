@@ -3,10 +3,14 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
+from aquant.log import get_logger
 from aquant.matching.cost import CostModel
 from aquant.matching.guards import AvailableSharesGuard, CashGuard, DelistGuard, Guard, HaltGuard, LimitGuard, T1Guard, VolumeCapGuard
 from aquant.matching.order import Order
 from aquant.strategy.signal import Signal
+
+
+logger = get_logger(__name__)
 
 
 if TYPE_CHECKING:
@@ -36,6 +40,11 @@ class Matcher:
         if base_value <= 0:
             return
 
+        # 校验权重之和：超过 1 时后排信号会因现金不足被静默截断，发出警告
+        total_weight = sum(s.weight for s in signals)
+        if total_weight > 1.0 + 1e-9:
+            logger.warning("信号权重之和超过 1.0，后排信号可能因现金不足被截断，请检查策略是否正确归一化", total_weight=round(total_weight, 6), dt=dt)
+
         if rebalance_mode == "replace":
             signal_symbols = {s.symbol for s in signals}
             for symbol in list(portfolio.symbols):
@@ -54,9 +63,8 @@ class Matcher:
             if bar is None or bar.open <= 0:
                 return 1
             lot = self._lot_size_for(s.symbol)
-            target = math.floor(available_capital * s.weight / bar.open / lot) * lot
-            # 目标股数 < 当前股数 → 净减仓 → 排前执行以释放现金
-            # T+1 锁定的仓位实际卖出量由 AvailableSharesGuard 截断，排序不受影响
+            est_fill_price = self.cost_model.buy_fill_price(bar.open)
+            target = math.floor(available_capital * s.weight / est_fill_price / lot) * lot
             return 0 if target < current_shares else 1
 
         signals = sorted(signals, key=_sort_key)
@@ -67,11 +75,17 @@ class Matcher:
                 continue
 
             lot = self._lot_size_for(signal.symbol)
-            target_shares = math.floor(available_capital * signal.weight / bar.open / lot) * lot
+            # 用买入成交价（含滑点）计算目标股数，与实际结算价保持一致，
+            # 避免按 open 算出的股数在成交时超出 available_capital
+            est_fill_price = self.cost_model.buy_fill_price(bar.open)
+            target_shares = math.floor(available_capital * signal.weight / est_fill_price / lot) * lot
 
             pos = portfolio.positions.get(signal.symbol)
             current_shares = pos.shares if pos else 0
-            current_weight = current_shares * bar.open / base_value if base_value > 0 else 0.0
+            # 用 last_close 与 base_value（昨日收盘估值）保持时间基准一致，
+            # 避免分子用今日 open、分母用昨日收盘导致 delta_weight 失真
+            last_price = pos.last_close if pos else bar.open
+            current_weight = current_shares * last_price / base_value if base_value > 0 else 0.0
             delta_weight = signal.weight - current_weight
 
             # weight=0 是明确的清仓指令，绕过调仓阈值；否则微小偏差不触发交易

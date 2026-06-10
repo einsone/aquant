@@ -132,11 +132,4 @@ class VolumeCapGuard(Guard):
         return order.shares > 0
 
 
-class DelistGuard(Guard):
-    """禁止买入已退市标的。"""
-
-    def check(self, order: Order, bar: DayBar, portfolio: Portfolio) -> bool:
-        return not (order.side == "buy" and bar.is_delisted)
-
-
-DEFAULT_GUARD_CHAIN: list[type[Guard]] = [HaltGuard, LimitGuard, T1Guard, AvailableSharesGuard, CashGuard, VolumeCapGuard, DelistGuard]
+DEFAULT_GUARD_CHAIN: list[type[Guard]] = [HaltGuard, LimitGuard, T1Guard, AvailableSharesGuard, CashGuard, VolumeCapGuard]

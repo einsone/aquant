@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from aquant.log import get_logger
 from aquant.matching.cost import CostModel
-from aquant.matching.guards import AvailableSharesGuard, CashGuard, DelistGuard, Guard, HaltGuard, LimitGuard, T1Guard, VolumeCapGuard
+from aquant.matching.guards import AvailableSharesGuard, CashGuard, Guard, HaltGuard, LimitGuard, T1Guard, VolumeCapGuard
 from aquant.matching.order import Order
 from aquant.strategy.signal import Signal
 
@@ -25,7 +25,7 @@ class Matcher:
         self.cost_model = cost_model
         self.cash_buffer = cash_buffer
         self.rebalance_threshold = rebalance_threshold
-        self._guards: list[Guard] = [HaltGuard(), LimitGuard(), T1Guard(), AvailableSharesGuard(), CashGuard(cost_model.commission_rate, cost_model.min_commission, cost_model.slippage_rate), VolumeCapGuard(volume_cap_ratio), DelistGuard()]
+        self._guards: list[Guard] = [HaltGuard(), LimitGuard(), T1Guard(), AvailableSharesGuard(), CashGuard(cost_model.commission_rate, cost_model.min_commission, cost_model.slippage_rate), VolumeCapGuard(volume_cap_ratio)]
 
     def _lot_size_for(self, symbol: str) -> int:
         return 200 if symbol.startswith("688") else 100

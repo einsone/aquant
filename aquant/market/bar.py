@@ -20,4 +20,3 @@ class DayBar:
     up_limit: float
     down_limit: float
     is_halted: bool
-    is_delisted: bool

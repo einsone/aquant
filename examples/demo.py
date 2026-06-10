@@ -72,7 +72,7 @@ class DemoDataSource(DataSource):
             if sym not in _prices:
                 continue
             price = _prices[sym][idx]
-            result[sym] = DayBar(symbol=sym, date=dt, open=price * 0.998, close=price, high=price * 1.01, low=price * 0.99, volume=1_000_000, up_limit=price * 1.1, down_limit=price * 0.9, is_halted=False, is_delisted=False)
+            result[sym] = DayBar(symbol=sym, date=dt, open=price * 0.998, close=price, high=price * 1.01, low=price * 0.99, volume=1_000_000, up_limit=price * 1.1, down_limit=price * 0.9, is_halted=False)
         return result
 
     def load_adjustments(self, start: date, end: date) -> list[CorporateAction]:

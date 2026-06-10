@@ -18,6 +18,9 @@ def annualized_return(nav: pl.Series, trading_days: int = 252) -> float:
     if len(nav) < 2:
         return 0.0
     n = len(nav) - 1
+    # 样本过短时指数年化会异常放大（如单日 1% → 1230%），降级为持有收益率
+    if n < 5:
+        return float(nav[-1] / nav[0] - 1)
     return float((nav[-1] / nav[0]) ** (trading_days / n) - 1)
 
 
@@ -31,8 +34,10 @@ def sharpe(returns: pl.Series, risk_free: float = 0.0, trading_days: int = 252) 
     vol = annualized_volatility(returns, trading_days)
     if vol == 0:
         return 0.0
-    ann_ret = float(returns.mean()) * trading_days
-    return (ann_ret - risk_free) / vol
+    # BUG-6 修复：分子改用几何年化，与 annualized_return / annualized_volatility 的理论假设一致，
+    # 原算术年化（mean * 252）在日收益率较大时会系统性高估 Sharpe
+    ann_ret = float((1 + float(returns.mean())) ** trading_days - 1) - risk_free
+    return ann_ret / vol
 
 
 def max_drawdown(nav: pl.Series) -> tuple[float, int]:
@@ -179,6 +184,16 @@ def compute_all(daily_nav: list, trade_log: list, benchmark_df: object | None = 
         if len(joined) > 1:
             port_ret = joined["return"]
             bench_ret = joined["return_right"]
+
+            # 基准覆盖率检查：inner join 丢弃不重叠日期，覆盖率过低时相对指标失真
+            coverage = len(joined) / len(nav_returns)
+            if coverage < 0.9:
+                import logging as _logging
+                _logging.getLogger(__name__).warning(
+                    "基准日期覆盖率不足 90%%（%.1f%%），ir/alpha/beta/excess_return 存在样本偏差",
+                    coverage * 100,
+                )
+
             alpha, beta = alpha_beta(port_ret, bench_ret, trading_days)
             ir = information_ratio(port_ret, bench_ret, trading_days)
             # 前置 1.0 作为基准起点，确保第一日收益被纳入年化计算
@@ -188,6 +203,17 @@ def compute_all(daily_nav: list, trade_log: list, benchmark_df: object | None = 
             bench_ann_ret = annualized_return(bench_nav, trading_days)
             # excess 使用相同日期范围的组合收益，避免时间窗口不匹配
             port_ann_ret_joined = annualized_return(port_nav_joined, trading_days)
-            metrics.update({"alpha": alpha, "beta": beta, "information_ratio": ir, "benchmark_annualized_return": bench_ann_ret, "excess_annualized_return": port_ann_ret_joined - bench_ann_ret})
+            # sharpe_on_benchmark_dates：与 ir/alpha/beta 使用相同时间窗口，便于横向对比
+            # 全量 sharpe 仍保留在 metrics["sharpe"] 中
+            sharpe_joined = sharpe(port_ret, trading_days=trading_days)
+            metrics.update({
+                "alpha": alpha,
+                "beta": beta,
+                "information_ratio": ir,
+                "benchmark_annualized_return": bench_ann_ret,
+                "excess_annualized_return": port_ann_ret_joined - bench_ann_ret,
+                "sharpe_on_benchmark_dates": sharpe_joined,
+                "benchmark_coverage": round(coverage, 4),
+            })
 
     return metrics

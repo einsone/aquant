@@ -12,9 +12,9 @@ wheels = [
 ]
 
 [[package]]
-name = "aquantv2"
+name = "aquant"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "polars" },
     { name = "pydantic" },

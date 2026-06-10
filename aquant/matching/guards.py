@@ -98,6 +98,15 @@ class CashGuard(Guard):
         if commission < self.min_commission:
             # 实际按最低佣金收，重新计算：总成本 = n x fill_price + min_commission
             n = int(max(available - self.min_commission, 0) / fill_price / lot) * lot
+            # BUG-2 修复：最低佣金路径同样需要兜底，防止因整数截断导致总成本超出可用资金
+            if n > 0 and n * fill_price + self.min_commission > available:
+                n = max(n - lot, 0)
+        else:
+            # 比例路径：验证实际总成本（含佣金）不超出可用资金
+            # n * fill_price * rate 可能刚超过 min_commission，但四舍五入后实际成本超出 available
+            actual_cost = n * fill_price + commission
+            if actual_cost > available:
+                n = max(n - lot, 0)
 
         order.shares = min(order.shares, n)
         return order.shares >= lot

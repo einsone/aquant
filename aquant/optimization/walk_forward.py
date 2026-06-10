@@ -69,6 +69,11 @@ def walk_forward(strategy_cls: type[Strategy], param_grid: dict[str, list], conf
     keys = list(param_grid.keys())
     combinations = list(itertools.product(*[param_grid[k] for k in keys]))
 
+    # BUG-5 修复：param_grid 有键但值列表为空时（如 {"x": []}），combinations 为空，
+    # _run_fold 里 combinations[0] 会 IndexError，提前返回避免崩溃
+    if not combinations:
+        return pl.DataFrame()
+
     folds: list[tuple[date, date, date, date]] = []
     idx = 0
     while idx + train_window + test_window <= len(trading_days):
@@ -88,6 +93,16 @@ def walk_forward(strategy_cls: type[Strategy], param_grid: dict[str, list], conf
         rows = [_run_fold(args) for args in fold_args]
     else:
         import multiprocessing
+        import pickle
+
+        # 多进程模式下 data_source 须可序列化；提前验证，避免 pool.map 时难以定位的错误
+        try:
+            pickle.dumps(data_source)
+        except Exception as exc:
+            raise ValueError(
+                "data_source 不可序列化，多进程模式下需实现 __getstate__/__setstate__ 或使用懒连接。"
+                f"原始错误：{exc}"
+            ) from exc
 
         workers = n_jobs if n_jobs > 0 else multiprocessing.cpu_count()
         with multiprocessing.Pool(processes=workers) as pool:

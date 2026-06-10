@@ -17,15 +17,22 @@ class EventQueue:
     def __init__(self) -> None:
         self._events: list[Event] = []
         self._index: int = 0
+        self._sealed: bool = False
 
     def push(self, event: Event) -> None:
+        if self._sealed:
+            raise RuntimeError("EventQueue 已封闭，seal() 后不允许再调用 push()。")
         self._events.append(event)
 
     def seal(self) -> None:
-        """对所有事件排序。所有事件写入完毕后调用一次。"""
+        """对所有事件排序并封闭队列。所有事件写入完毕后调用一次。"""
         self._events.sort()
+        self._sealed = True
 
     def __iter__(self) -> EventQueue:
+        # BUG-3 修复：每次迭代重置索引，支持重复迭代（如测试场景多次遍历同一队列）
+        # 注意：seal() 未调用时迭代会访问未排序的数据，调用方应在 seal() 后再迭代
+        self._index = 0
         return self
 
     def __next__(self) -> Event:

@@ -47,10 +47,10 @@ class Matcher:
 
         if rebalance_mode == "replace":
             signal_symbols = {s.symbol for s in signals}
-            for symbol in list(portfolio.symbols):
-                if symbol not in signal_symbols:
-                    # signal_date 用成交日（dt，即 T+1），而非信号生成日（T）
-                    signals = [*signals, Signal(symbol=symbol, weight=0.0, signal_date=dt)]
+            # 一次性构造清仓信号列表，避免循环内重复重建 signals（O(n²)）
+            extra = [Signal(symbol=symbol, weight=0.0, signal_date=dt) for symbol in portfolio.symbols if symbol not in signal_symbols]
+            if extra:
+                signals = [*signals, *extra]
 
         available_capital = base_value * (1 - self.cash_buffer)
 

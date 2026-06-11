@@ -10,13 +10,18 @@ from aquant.core.context import Context
 from aquant.data.source import DataSource
 from aquant.events.event import AdjustmentEvent, DayStartEvent, DelistEvent, FillEvent, Phase, SignalEvent, ValuationEvent
 from aquant.events.queue import EventQueue
+from aquant.log import get_logger
 from aquant.matching.cost import CostModel
 from aquant.matching.matcher import Matcher
 from aquant.portfolio.portfolio import Portfolio
 from aquant.strategy.signal import Signal
 
+logger = get_logger(__name__)
+
 
 if TYPE_CHECKING:
+    import polars as pl
+
     from aquant.market.bar import DayBar
     from aquant.strategy.base import Strategy
 
@@ -45,12 +50,12 @@ class BacktestConfig(BaseModel):
 
 
 class BacktestResult:
-    def __init__(self, portfolio: Portfolio, benchmark_df: object = None) -> None:
+    def __init__(self, portfolio: Portfolio, benchmark_df: pl.DataFrame | None = None) -> None:
         self.portfolio = portfolio
         self.metrics: dict = {}
         self._benchmark_df = benchmark_df
 
-    def compute_metrics(self, benchmark_df: object = None) -> BacktestResult:
+    def compute_metrics(self, benchmark_df: pl.DataFrame | None = None) -> BacktestResult:
         from aquant.analytics import metrics as m
 
         effective_benchmark = benchmark_df if benchmark_df is not None else self._benchmark_df
@@ -71,6 +76,22 @@ class BacktestResult:
             Path(path).write_text(text, encoding="utf-8")
         return text
 
+    def render_html(self, path: str = "backtest_report.html", open_browser: bool = False) -> str:
+        """生成可交互 HTML 回测报告，数据来自当前 BacktestResult。
+
+        参数
+        ----
+        path         : 输出文件路径，默认 backtest_report.html
+        open_browser : 生成后自动在浏览器打开
+
+        返回
+        ----
+        写入的文件绝对路径。
+        """
+        from aquant.analytics.report import render_html
+
+        return render_html(self, path=path, open_browser=open_browser)
+
 
 class Engine:
     def __init__(self, strategy: Strategy, data_source: DataSource, config: BacktestConfig) -> None:
@@ -88,6 +109,13 @@ class Engine:
         self._matcher = Matcher(cost_model=self._cost_model, rebalance_threshold=config.rebalance_threshold, volume_cap_ratio=config.volume_cap_ratio)
 
         self._trading_days = trading_days
+        logger.info(
+            "回测初始化完成",
+            start=str(trading_days[0]),
+            end=str(trading_days[-1]),
+            trading_days=len(trading_days),
+            initial_capital=config.initial_capital,
+        )
         self._adjuster.preload(config.start, config.end, data_source)
         self._queue = self._build_queue(trading_days)
 
@@ -124,13 +152,30 @@ class Engine:
         return Context(current_date=dt, positions=positions, cash=self._portfolio.cash, total_value=total_value)
 
     def run(self) -> BacktestResult:
+        total_days = len(self._trading_days)
+        log_interval = max(1, total_days // 20)  # 约每 5% 进度输出一次
+
         start_context = self._build_context(self._trading_days[0])
         self._strategy.on_start(start_context)
+        logger.info("回测开始", strategy=type(self._strategy).__name__)
 
+        day_idx = 0
         for event in self._queue:
             if event.phase == Phase.DAY_START:
                 self._portfolio.reset_tradeable()
                 self._day_is_warmup = self._warmup_remaining > 0
+                day_idx += 1
+                if day_idx % log_interval == 0 or day_idx == total_days:
+                    pct = day_idx / total_days * 100
+                    logger.info(
+                        "回测进度",
+                        date=str(event.date),
+                        day=day_idx,
+                        total=total_days,
+                        pct=f"{pct:.0f}%",
+                        warmup=self._day_is_warmup,
+                        portfolio_value=round(self._portfolio.total_value, 2),
+                    )
 
             elif event.phase == Phase.FILL:
                 # 执行前一交易日 SIGNAL 阶段缓存的信号，以今日（T+1）开盘价成交
@@ -140,6 +185,12 @@ class Engine:
                 if has_pending:
                     symbols = {s.symbol for s in self._pending_signals} | self._portfolio.symbols
                     self._day_bars = self._data_source.load_bars(event.date, symbols)
+                    logger.debug(
+                        "执行调仓",
+                        date=str(event.date),
+                        signals=len(self._pending_signals),
+                        mode=self._strategy.rebalance_mode,
+                    )
                     self._matcher.execute(self._pending_signals, self._portfolio, self._day_bars, event.date, self._strategy.rebalance_mode)
                     self._pending_signals = []
 
@@ -180,4 +231,12 @@ class Engine:
 
         result = BacktestResult(portfolio=self._portfolio, benchmark_df=self._config.benchmark)
         result.compute_metrics()
+        logger.info(
+            "回测完成",
+            total_return=f"{result.metrics.get('total_return', 0) * 100:.2f}%",
+            sharpe=round(result.metrics.get("sharpe", 0), 4),
+            max_drawdown=f"{result.metrics.get('max_drawdown', 0) * 100:.2f}%",
+            trades=len(self._portfolio.trade_log),
+            final_value=round(self._portfolio.total_value, 2),
+        )
         return result

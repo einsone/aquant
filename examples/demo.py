@@ -129,7 +129,7 @@ class MomentumStrategy(Strategy):
 
 
 def run_single() -> None:
-    config = BacktestConfig(start=START, end=END, initial_capital=1_000_000, commission_rate=0.0003, stamp_duty_rate=0.001, slippage_rate=0.0005, cash_buffer=0.02)
+    config = BacktestConfig(start=START, end=END, initial_capital=1_000_000, commission_rate=0.0003, stamp_duty_rate=0.001, slippage_rate=0.0005)
 
     result = Engine(strategy=MomentumStrategy(lookback=20, top_n=5), data_source=DemoDataSource(), config=config).run()
 

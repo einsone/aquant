@@ -20,20 +20,20 @@ class Strategy(ABC):
         rebalance_mode: 调仓模式。
             ``"replace"``：每次 ``on_bar`` 的返回值视为完整目标持仓，
                 未出现在信号中的现有持仓自动以 weight=0 清仓。适合选股策略：
-                策略只需关心"今天选谁"，不再看好的票无需显式发出卖出信号。
+                策略只需关心"今天选谁"，不再看好的票无需显式发出卖出信号。默认值。
             ``"incremental"``：只对信号中出现的标的调仓，未出现的持仓保持不动。
-                适合需要长期持仓、偶尔调整的策略。默认值。
+                适合需要长期持仓、偶尔调整的策略。
     """
 
     warmup_period: int = 0
-    rebalance_mode: str = "incremental"
+    rebalance_mode: str = "replace"
 
     def on_start(self, context: Context) -> None:  # noqa: B027
         """回测开始前调用一次。
 
         适合在此处建立数据库连接、加载静态数据或初始化跨 bar 的状态。
 
-        ``context.current_date`` 等于 ``config.start``。
+        ``context.current_date`` 等于回测区间内第一个实际交易日。
 
         使用多进程参数优化（``n_jobs != 1``）时，每个 worker 进程都会
         独立调用此方法。因此数据库连接应在此处创建，而不是在 ``__init__``
@@ -51,14 +51,16 @@ class Strategy(ABC):
         使用规则：
         - 只能查询 ``date <= context.current_date`` 的数据。
           框架不拦截未来数据，防止前视偏差由策略自行负责。
-        - ``weight`` 相对于 ``context.total_value``，``weight=0.1``
-          表示该标的占组合 10%。
+        - ``weight`` 相对于组合总净值的比例，``weight=0.1``
+          表示目标持仓占组合 10%。
         - 各信号的权重无需相加为 1，框架对每个信号独立计算目标股数。
+          权重之和超过 1.0 时，后排买入信号可能因现金不足被截断。
 
         返回值语义取决于 ``rebalance_mode``：
         - ``"replace"`` 模式：返回值视为完整目标持仓。
           未出现在返回列表中的现有持仓会被自动清仓。
-          返回 ``[]`` 表示清空所有持仓。
+          返回 ``[]`` 等同于"本日不操作"，持仓保持不变。
+          要主动清仓，需显式返回 ``Signal(symbol=s, weight=0)``。
         - ``"incremental"`` 模式：只对返回列表中出现的标的调仓。
           返回 ``[]`` 维持现状，不触发任何交易。
           显式返回 ``Signal(symbol=s, weight=0)`` 可清仓指定标的。
@@ -71,5 +73,5 @@ class Strategy(ABC):
         """回测结束后调用一次。
 
         适合在此处关闭数据库连接、文件句柄，或输出最终汇总信息。
-        ``context.current_date`` 等于 ``config.end``。
+        ``context.current_date`` 等于回测区间内最后一个实际交易日。
         """

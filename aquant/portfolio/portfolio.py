@@ -87,11 +87,11 @@ class Portfolio:
             pos.cost_basis = (old_total_cost + shares * fill_price + commission) / pos.shares
             if not locked:
                 pos.tradeable_shares += shares
-            # BUG-9 修复：只更新 market_value，不覆盖 last_close
-            # last_close 语义为昨收价，盘中覆盖会导致 matcher current_weight 计算失真
             pos.market_value = pos.shares * fill_price
         else:
             cost_basis = (shares * fill_price + commission) / shares
+            # last_close 语义为最近一次已知价格，新建仓时即为实际成交价（含滑点）。
+            # 当日 VALUATION 阶段会以真实收盘价覆盖。
             self.positions[symbol] = Position(symbol=symbol, shares=shares, tradeable_shares=0 if locked else shares, cost_basis=cost_basis, market_value=shares * fill_price, last_close=fill_price)
 
         self.trade_log.append(Trade(date=dt, symbol=symbol, side="buy", shares=shares, price=fill_price, commission=commission, stamp_duty=0.0, pnl=0.0))
@@ -106,16 +106,14 @@ class Portfolio:
         pos.shares -= shares
         pos.tradeable_shares -= shares
 
-        # BUG-1 修复：断言移到 del 之前，避免清仓时静默跳过负值检查
-        assert pos.tradeable_shares >= 0, (
-            f"tradeable_shares 变负：symbol={symbol}, tradeable={pos.tradeable_shares}, sold={shares}"
-        )
+        # 断言移到 del 之前，避免清仓时静默跳过负值检查
+        assert pos.tradeable_shares >= 0, f"tradeable_shares 变负：symbol={symbol}, tradeable={pos.tradeable_shares}, sold={shares}"
 
         if pos.shares == 0:
             del self.positions[symbol]
         else:
-            # BUG-9 修复：只更新 market_value，不覆盖 last_close（last_close 语义为昨收价，
-            # 盘中用成交价覆盖会导致同日多次交易时 matcher 的 current_weight 计算失真）
+            # 只更新 market_value，不覆盖 last_close（last_close 语义为最近已知收盘价，
+            # 成交价覆盖会导致同批次多信号时 matcher 的 current_weight 计算失真）
             pos.market_value = pos.shares * fill_price
 
         self.trade_log.append(Trade(date=dt, symbol=symbol, side="sell", shares=shares, price=fill_price, commission=commission, stamp_duty=stamp_duty, pnl=pnl))

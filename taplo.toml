@@ -1,0 +1,29 @@
+[schema]
+    enabled = false
+
+[formatting]
+    align_comments        = true   # 对齐注释
+    align_entries         = true   # 对齐条目
+    allowed_blank_lines   = 1      # 最大允许空行数
+    array_auto_collapse   = true   # 自动折叠数组
+    array_auto_expand     = true   # 自动展开数组
+    array_trailing_comma  = true   # 多行数组添加尾随逗号
+    column_width          = 160    # 最大列宽
+    compact_arrays        = true   # 紧凑单行数组
+    compact_entries       = false  # 保留条目 = 间的空白
+    compact_inline_tables = false  # 不紧凑行内表
+    crlf                  = false  # 是否使用 CRLF 作为行结束符
+    indent_entries        = true   # 缩进条目
+    indent_string         = "    " # 缩进使用4个空格
+    indent_tables         = false  # 缩进表
+    inline_table_expand   = true   # 展开行内表
+    reorder_arrays        = true   # 重排数组
+    reorder_inline_tables = true   # 重排内联表
+    reorder_keys          = true   # 重排键
+    trailing_newline      = true   # 文件末尾换行
+
+[[rule]]
+    include = ["prek.toml"]
+[rule.formatting]
+    reorder_arrays = false
+    reorder_keys   = false # 文件末尾换行

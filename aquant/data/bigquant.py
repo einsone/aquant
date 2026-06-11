@@ -12,7 +12,7 @@ cn_stock_basic_info 等）与列名以实际 DAI schema 为准。
 from __future__ import annotations
 
 from functools import cached_property
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import polars as pl
 
@@ -39,7 +39,9 @@ class BigQuantDataSource(DataSource):
 
     def _query(self, sql: str) -> pl.DataFrame:
         # 统一查询入口：执行 SQL 并将 Arrow 结果转为 polars DataFrame。
-        return pl.from_arrow(self._dai.query(sql).arrow())
+        # pl.from_arrow 的 stub 返回 DataFrame | Series，DAI 返回 Arrow Table
+        # 故运行时必为 DataFrame；用 cast 收窄类型，无运行时开销。
+        return cast("pl.DataFrame", pl.from_arrow(self._dai.query(sql).arrow()))
 
     @cached_property
     def trading_days_df(self) -> pl.DataFrame:
@@ -49,20 +51,12 @@ class BigQuantDataSource(DataSource):
     @cached_property
     def delisted_df(self) -> pl.DataFrame:
         # 全量加载退市标的：cn_stock_basic_info 中 delist_date 非空者。
-        sql = (
-            "SELECT instrument, delist_date FROM cn_stock_basic_info "
-            "WHERE delist_date IS NOT NULL"
-        )
+        sql = "SELECT instrument, delist_date FROM cn_stock_basic_info WHERE delist_date IS NOT NULL"
         return self._query(sql).with_columns(pl.col("delist_date").cast(pl.Date))
 
     def load_calendar(self, start: date, end: date) -> list[date]:
         # 从缓存的全量交易日历中筛出 [start, end] 区间，升序返回。
-        days = (
-            self.trading_days_df.filter(pl.col("date").is_between(start, end))
-            .sort("date")
-            .get_column("date")
-            .to_list()
-        )
+        days = self.trading_days_df.filter(pl.col("date").is_between(start, end)).sort("date").get_column("date").to_list()
         return days
 
     def _year_bars(self, year: int) -> dict[date, pl.DataFrame]:
@@ -72,14 +66,7 @@ class BigQuantDataSource(DataSource):
         if cached is not None:
             return cached
 
-        sql = (
-            "SELECT b.date, b.instrument, b.open, b.close, b.high, b.low, "
-            "b.volume, b.upper_limit, b.lower_limit, s.suspended "
-            "FROM cn_stock_real_bar1d b "
-            "LEFT JOIN cn_stock_status s "
-            "ON b.date = s.date AND b.instrument = s.instrument "
-            f"WHERE b.date BETWEEN '{year}-01-01' AND '{year}-12-31'"
-        )
+        sql = f"SELECT b.date, b.instrument, b.open, b.close, b.high, b.low, b.volume, b.upper_limit, b.lower_limit, s.suspended FROM cn_stock_real_bar1d b LEFT JOIN cn_stock_status s ON b.date = s.date AND b.instrument = s.instrument WHERE b.date BETWEEN '{year}-01-01' AND '{year}-12-31'"
         df = self._query(sql)
         if df.is_empty():
             # 该年无行情（区间超出数据范围等），缓存空结果避免重复查询。
@@ -105,18 +92,7 @@ class BigQuantDataSource(DataSource):
         result: dict[str, DayBar] = {}
         for row in day_df.iter_rows(named=True):
             sym = row["instrument"]
-            result[sym] = DayBar(
-                symbol=sym,
-                date=row["date"],
-                open=row["open"],
-                close=row["close"],
-                high=row["high"],
-                low=row["low"],
-                volume=row["volume"],
-                up_limit=row["upper_limit"],
-                down_limit=row["lower_limit"],
-                is_halted=row["is_halted"],
-            )
+            result[sym] = DayBar(symbol=sym, date=row["date"], open=row["open"], close=row["close"], high=row["high"], low=row["low"], volume=row["volume"], up_limit=row["upper_limit"], down_limit=row["lower_limit"], is_halted=row["is_halted"])
         return result
 
     def load_adjustments(self, start: date, end: date) -> list[CorporateAction]:
@@ -126,12 +102,7 @@ class BigQuantDataSource(DataSource):
         actions: list[CorporateAction] = []
 
         # --- 分红 / 送转 ---
-        div_sql = (
-            "SELECT instrument, register_date, ex_date, "
-            "cash_after_tax, bonus_rate, conversed_rate "
-            "FROM cn_stock_dividend "
-            f"WHERE ex_date BETWEEN '{start}' AND '{end}'"
-        )
+        div_sql = f"SELECT instrument, register_date, ex_date, cash_after_tax, bonus_rate, conversed_rate FROM cn_stock_dividend WHERE ex_date BETWEEN '{start}' AND '{end}'"
         div_df = self._query(div_sql)
         for row in div_df.iter_rows(named=True):
             sym = row["instrument"]
@@ -152,47 +123,20 @@ class BigQuantDataSource(DataSource):
             # 送股 + 转增，均为每10股口径，合并后除以 10 得每股比例
             bonus_per10 = (row["bonus_rate"] or 0.0) + (row["conversed_rate"] or 0.0)
             if bonus_per10 > 0:
-                actions.append(
-                    BonusShares(
-                        symbol=sym,
-                        register_date=register_date,
-                        ex_date=ex_date,
-                        ratio=bonus_per10 / 10.0,
-                    )
-                )
+                actions.append(BonusShares(symbol=sym, register_date=register_date, ex_date=ex_date, ratio=bonus_per10 / 10.0))
 
         # --- 配股 ---
-        allot_sql = (
-            "SELECT instrument, register_date, exright_date, "
-            "allotment_rate, allotment_price "
-            "FROM cn_stock_allotment "
-            f"WHERE exright_date BETWEEN '{start}' AND '{end}'"
-        )
+        allot_sql = f"SELECT instrument, register_date, exright_date, allotment_rate, allotment_price FROM cn_stock_allotment WHERE exright_date BETWEEN '{start}' AND '{end}'"
         allot_df = self._query(allot_sql)
         for row in allot_df.iter_rows(named=True):
             rate_per10 = row["allotment_rate"] or 0.0  # 每10股口径
             price = row["allotment_price"] or 0.0
             if rate_per10 > 0 and price > 0:
-                actions.append(
-                    RightsIssue(
-                        symbol=row["instrument"],
-                        register_date=row["register_date"],
-                        ex_date=row["exright_date"],
-                        ratio=rate_per10 / 10.0,
-                        price_per_share=price,
-                    )
-                )
+                actions.append(RightsIssue(symbol=row["instrument"], register_date=row["register_date"], ex_date=row["exright_date"], ratio=rate_per10 / 10.0, price_per_share=price))
 
         return actions
 
     def load_delisted(self, start: date, end: date) -> dict[date, list[str]]:
         # 从全量缓存中筛出退市日落在 [start, end] 内的标的，按退市日聚合。
-        grouped = (
-            self.delisted_df.filter(pl.col("delist_date").is_between(start, end))
-            .group_by("delist_date")
-            .agg(pl.col("instrument"))
-        )
-        return {
-            row["delist_date"]: row["instrument"]
-            for row in grouped.iter_rows(named=True)
-        }
+        grouped = self.delisted_df.filter(pl.col("delist_date").is_between(start, end)).group_by("delist_date").agg(pl.col("instrument"))
+        return {row["delist_date"]: row["instrument"] for row in grouped.iter_rows(named=True)}

@@ -36,10 +36,11 @@ class DataSource(ABC):
 
     @abstractmethod
     def load_calendar(self, start: date, end: date) -> list[date]:
-        """返回 [start, end] 区间内的所有交易日列表，按升序排列。
+        """返回覆盖 [start, end] 区间的交易日列表，按升序排列。
 
         框架用此列表驱动事件循环，每个交易日对应一组有序事件。
-        start 和 end 均须出现在返回列表中（即两者必须是交易日）。
+        start 和 end 无需精确到交易日，框架会自动取列表中 >= start 的第一个
+        和 <= end 的最后一个交易日作为实际起止。
         """
 
     @abstractmethod

@@ -29,7 +29,6 @@ class BacktestConfig(BaseModel):
     min_commission: float = Field(default=5.0, ge=0, description="单笔最低佣金（元）。默认 5 元。")
     stamp_duty_rate: float = Field(default=0.001, ge=0, description="印花税税率，仅卖出单边收取。默认千分之一（0.001）。税率历史上有调整（2008 年降至 0.1%，2023 年再降至 0.05%），长周期回测可按实际修改。")
     slippage_rate: float = Field(default=0.0005, ge=0, description="滑点比例，按成交金额估算市场冲击成本。默认万分之五（0.0005）。")
-    cash_buffer: float = Field(default=0.02, ge=0, lt=1, description="现金缓冲比例，预留此比例的资金不参与投资，防止手数取整导致超额委托。默认 2%（0.02）。")
     rebalance_threshold: float = Field(default=0.0, ge=0, description="调仓阈值。目标权重与当前权重之差小于此值时不触发交易，避免微小信号变化产生无效换手。默认 0.0（每次都调仓）。")
     volume_cap_ratio: float = Field(default=1.0, gt=0, le=1, description="单笔委托量占当日总成交量的上限比例。默认 1.0（不限制）。设为较小值可模拟大资金的市场冲击约束。")
     benchmark: Any = Field(default=None, description="基准收益序列，类型为 pl.DataFrame，须含 date 和 return 两列。用于计算 Alpha、Beta、信息比率等相对指标。为 None 时跳过。")
@@ -86,8 +85,9 @@ class Engine:
         self._adjuster = Adjuster()
         self._portfolio = Portfolio(config.initial_capital)
         self._cost_model = CostModel.from_config(config)
-        self._matcher = Matcher(cost_model=self._cost_model, cash_buffer=config.cash_buffer, rebalance_threshold=config.rebalance_threshold, volume_cap_ratio=config.volume_cap_ratio)
+        self._matcher = Matcher(cost_model=self._cost_model, rebalance_threshold=config.rebalance_threshold, volume_cap_ratio=config.volume_cap_ratio)
 
+        self._trading_days = trading_days
         self._adjuster.preload(config.start, config.end, data_source)
         self._queue = self._build_queue(trading_days)
 
@@ -116,10 +116,15 @@ class Engine:
         return q
 
     def _build_context(self, dt: date) -> Context:
-        return Context(current_date=dt, positions=self._portfolio.position_views(), cash=self._portfolio.cash, total_value=self._portfolio.total_value)
+        # total_value 用 last_close 重算，避免 FILL 阶段成交后 market_value 被更新为今日
+        # 开盘成交价，导致 SIGNAL 阶段 context.total_value 混用今开与昨收两个时间基准。
+        # last_close 在 VALUATION 阶段才更新，FILL 后仍是昨收价，时间基准一致。
+        positions = self._portfolio.position_views()
+        total_value = self._portfolio.cash + sum(p.shares * p.last_close for p in positions.values())
+        return Context(current_date=dt, positions=positions, cash=self._portfolio.cash, total_value=total_value)
 
     def run(self) -> BacktestResult:
-        start_context = self._build_context(self._config.start)
+        start_context = self._build_context(self._trading_days[0])
         self._strategy.on_start(start_context)
 
         for event in self._queue:
@@ -129,15 +134,13 @@ class Engine:
 
             elif event.phase == Phase.FILL:
                 # 执行前一交易日 SIGNAL 阶段缓存的信号，以今日（T+1）开盘价成交
-                # replace 模式下即使信号为空（策略返回 []），也要进入 execute 以清仓现有持仓
+                # 空信号（策略返回 []）在任何模式下均视为"不操作"，不触发任何交易
                 # 预热期内不执行撮合
                 has_pending = bool(self._pending_signals)
-                replace_needs_liquidation = not self._day_is_warmup and self._strategy.rebalance_mode == "replace" and bool(self._portfolio.symbols)
-                if has_pending or replace_needs_liquidation:
+                if has_pending:
                     symbols = {s.symbol for s in self._pending_signals} | self._portfolio.symbols
                     self._day_bars = self._data_source.load_bars(event.date, symbols)
-                    base_value = self._portfolio.total_value
-                    self._matcher.execute(self._pending_signals, self._portfolio, self._day_bars, base_value, event.date, self._strategy.rebalance_mode)
+                    self._matcher.execute(self._pending_signals, self._portfolio, self._day_bars, event.date, self._strategy.rebalance_mode)
                     self._pending_signals = []
 
             elif event.phase == Phase.ADJUSTMENT:
@@ -172,7 +175,7 @@ class Engine:
                     self._portfolio.take_snapshot(event.date, self._day_bars)
                 self._day_bars = {}  # 无论是否预热，每日清空，防止 stale bars 泄漏到次日
 
-        end_context = self._build_context(self._config.end)
+        end_context = self._build_context(self._trading_days[-1])
         self._strategy.on_end(end_context)
 
         result = BacktestResult(portfolio=self._portfolio, benchmark_df=self._config.benchmark)

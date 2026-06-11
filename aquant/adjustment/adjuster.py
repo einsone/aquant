@@ -100,8 +100,8 @@ class Adjuster:
 
             elif isinstance(action, RightsIssue):
                 # 配股需要持股人主动出资认购，框架不自动处理。
-                # 通过 on_adjustment 回调通知策略，由策略自行决定是否认购。
-                logger.debug("配股事件已通知策略，框架不自动处理认购", action=action)
+                # 策略可通过查询数据源感知配股事件并自行决定是否认购。
+                logger.debug("配股事件跳过，框架不自动处理认购", action=action)
 
     def force_close(self, event: DelistEvent, portfolio: Portfolio, bars: dict[str, DayBar], cost_model: CostModel) -> None:
         """退市强制平仓，在引擎的 DELIST 阶段调用。
@@ -117,8 +117,8 @@ class Adjuster:
         for symbol in to_close:
             pos = portfolio.positions[symbol]
             bar = bars.get(symbol)
-            # 优先用当日开盘价；无行情时用最后已知收盘价估值
-            price = bar.open if (bar and bar.open > 0) else pos.last_close
+            # 优先用当日开盘价；停牌或无行情时用最后已知收盘价估值
+            price = bar.open if (bar and not bar.is_halted and bar.open > 0) else pos.last_close
             shares = pos.shares
 
             # 价格为 0（标的价值归零）时直接核销持仓，不走结算，避免强收最低佣金

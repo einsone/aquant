@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 
 if TYPE_CHECKING:
     import polars as pl
+
+    from aquant.portfolio.position import NavRecord
 
 
 def total_return(nav: pl.Series) -> float:
@@ -27,16 +29,17 @@ def annualized_return(nav: pl.Series, trading_days: int = 252) -> float:
 def annualized_volatility(returns: pl.Series, trading_days: int = 252) -> float:
     if len(returns) < 2:
         return 0.0
-    return float(returns.std() * math.sqrt(trading_days))
+    return float(cast("float", returns.std()) * math.sqrt(trading_days))
 
 
 def sharpe(returns: pl.Series, risk_free: float = 0.0, trading_days: int = 252) -> float:
     vol = annualized_volatility(returns, trading_days)
     if vol == 0:
         return 0.0
-    # BUG-6 修复：分子改用几何年化，与 annualized_return / annualized_volatility 的理论假设一致，
-    # 原算术年化（mean * 252）在日收益率较大时会系统性高估 Sharpe
-    ann_ret = float((1 + float(returns.mean())) ** trading_days - 1) - risk_free
+    # 分子用几何年化，与 annualized_return 保持一致。
+    # 分母 annualized_volatility 用 std * sqrt(252)（方差叠加），两者理论框架略有差异，
+    # 但在日收益率较小时偏差可忽略，且与业界惯用的 Sharpe 计算方式一致。
+    ann_ret = float((1 + cast("float", returns.mean())) ** trading_days - 1) - risk_free
     return ann_ret / vol
 
 
@@ -88,10 +91,10 @@ def calmar(nav: pl.Series, trading_days: int = 252) -> float:
 def information_ratio(returns: pl.Series, benchmark: pl.Series, trading_days: int = 252) -> float:
     """信息比率。两个 Series 须已按日期对齐，长度相同。"""
     excess = returns - benchmark
-    std = float(excess.std())
+    std = cast("float", excess.std())
     if std == 0:
         return 0.0
-    return float(excess.mean() / std * (trading_days**0.5))
+    return cast("float", excess.mean()) / std * (trading_days**0.5)
 
 
 def alpha_beta(returns: pl.Series, benchmark: pl.Series, trading_days: int = 252) -> tuple[float, float]:
@@ -103,19 +106,19 @@ def alpha_beta(returns: pl.Series, benchmark: pl.Series, trading_days: int = 252
     if var_b == 0:
         return 0.0, 0.0
     beta = float(cov_matrix["cov"][0]) / var_b
-    alpha_daily = float(returns.mean()) - beta * float(benchmark.mean())
-    alpha_ann = alpha_daily * trading_days
+    alpha_daily = cast("float", returns.mean()) - beta * cast("float", benchmark.mean())
+    alpha_ann = (1 + alpha_daily) ** trading_days - 1
     return alpha_ann, beta
 
 
-def avg_position_count(daily_nav: list) -> float:
+def avg_position_count(daily_nav: list[NavRecord]) -> float:
     """每日平均持仓数量。从 daily_nav 的 position_count 字段读取。"""
     if not daily_nav:
         return 0.0
     return sum(n.position_count for n in daily_nav) / len(daily_nav)
 
 
-def turnover(trade_log: list, daily_nav: list, trading_days: int = 252) -> float:
+def turnover(trade_log: list, daily_nav: list[NavRecord], trading_days: int = 252) -> float:
     """年化单边换手率。"""
     if not daily_nav or not trade_log:
         return 0.0
@@ -124,7 +127,7 @@ def turnover(trade_log: list, daily_nav: list, trading_days: int = 252) -> float
     if avg_nav == 0:
         return 0.0
     years = len(daily_nav) / trading_days
-    return total_traded / avg_nav / years if years > 0 else 0.0
+    return total_traded / avg_nav / years
 
 
 def win_rate(trade_log: list) -> float:
@@ -146,7 +149,7 @@ def profit_loss_ratio(trade_log: list) -> float:
     return float("inf") if avg_win > 0 else 0.0
 
 
-def compute_all(daily_nav: list, trade_log: list, benchmark_df: object | None = None, trading_days: int = 252) -> dict:
+def compute_all(daily_nav: list[NavRecord], trade_log: list, benchmark_df: pl.DataFrame | None = None, trading_days: int = 252) -> dict:
     import polars as pl
 
     if not daily_nav:
@@ -155,8 +158,14 @@ def compute_all(daily_nav: list, trade_log: list, benchmark_df: object | None = 
     nav_series = pl.Series([n.total for n in daily_nav])
     returns = nav_series.pct_change().drop_nulls()
 
+    n_days = len(daily_nav)
+    if n_days < trading_days:
+        from aquant.log import get_logger as _get_logger
+
+        _get_logger(__name__).warning("回测时长不足一年，年化收益率由几何放大计算，结果仅供参考", backtest_days=n_days, required_days=trading_days)
+
     dd, dd_duration = max_drawdown(nav_series)
-    avg_pos = sum(n.position_count for n in daily_nav) / len(daily_nav) if daily_nav else 0.0
+    avg_pos = avg_position_count(daily_nav)
     metrics: dict = {
         "total_return": total_return(nav_series),
         "annualized_return": annualized_return(nav_series, trading_days),
@@ -189,10 +198,8 @@ def compute_all(daily_nav: list, trade_log: list, benchmark_df: object | None = 
             coverage = len(joined) / len(nav_returns)
             if coverage < 0.9:
                 import logging as _logging
-                _logging.getLogger(__name__).warning(
-                    "基准日期覆盖率不足 90%%（%.1f%%），ir/alpha/beta/excess_return 存在样本偏差",
-                    coverage * 100,
-                )
+
+                _logging.getLogger(__name__).warning("基准日期覆盖率不足 90%%（%.1f%%），ir/alpha/beta/excess_return 存在样本偏差", coverage * 100)
 
             alpha, beta = alpha_beta(port_ret, bench_ret, trading_days)
             ir = information_ratio(port_ret, bench_ret, trading_days)
@@ -206,14 +213,6 @@ def compute_all(daily_nav: list, trade_log: list, benchmark_df: object | None = 
             # sharpe_on_benchmark_dates：与 ir/alpha/beta 使用相同时间窗口，便于横向对比
             # 全量 sharpe 仍保留在 metrics["sharpe"] 中
             sharpe_joined = sharpe(port_ret, trading_days=trading_days)
-            metrics.update({
-                "alpha": alpha,
-                "beta": beta,
-                "information_ratio": ir,
-                "benchmark_annualized_return": bench_ann_ret,
-                "excess_annualized_return": port_ann_ret_joined - bench_ann_ret,
-                "sharpe_on_benchmark_dates": sharpe_joined,
-                "benchmark_coverage": round(coverage, 4),
-            })
+            metrics.update({"alpha": alpha, "beta": beta, "information_ratio": ir, "benchmark_annualized_return": bench_ann_ret, "excess_annualized_return": port_ann_ret_joined - bench_ann_ret, "sharpe_on_benchmark_dates": sharpe_joined, "benchmark_coverage": round(coverage, 4)})
 
     return metrics

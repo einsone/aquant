@@ -23,12 +23,18 @@ class HaltGuard(Guard):
 
 
 class LimitGuard(Guard):
-    """开盘价触及涨跌停板时拒绝委托。"""
+    """开盘价触及涨跌停板时拒绝委托。
+
+    使用 1e-6 的容差做浮点比较，避免 A 股价格精度（分）在 float 表示时的微小误差
+    导致恰好等于涨跌停价的开盘价被误判为未触板。
+    """
+
+    _EPS = 1e-6
 
     def check(self, order: Order, bar: DayBar, portfolio: Portfolio) -> bool:
-        if order.side == "buy" and bar.open >= bar.up_limit:
+        if order.side == "buy" and bar.open >= bar.up_limit - self._EPS:
             return False
-        return not (order.side == "sell" and bar.open <= bar.down_limit)
+        return not (order.side == "sell" and bar.open <= bar.down_limit + self._EPS)
 
 
 class T1Guard(Guard):
@@ -43,9 +49,6 @@ class T1Guard(Guard):
 class AvailableSharesGuard(Guard):
     """卖出量截断至当日可卖份额，并按手数取整。"""
 
-    def _lot_size_for(self, symbol: str) -> int:
-        return 200 if symbol.startswith("688") else 100
-
     def check(self, order: Order, bar: DayBar, portfolio: Portfolio) -> bool:
         if order.side != "sell":
             return True
@@ -54,10 +57,12 @@ class AvailableSharesGuard(Guard):
         if pos is None:
             return False
 
-        lot = self._lot_size_for(order.symbol)
         max_shares = pos.tradeable_shares
         order.shares = min(order.shares, max_shares)
-        order.shares = (order.shares // lot) * lot
+        # 清仓时不按手数取整，直接卖出全部可卖份额，
+        # 避免送股/配股产生的非整百股数永远无法清仓
+        if not order.liquidate:
+            order.shares = (order.shares // 100) * 100
 
         return order.shares > 0
 
@@ -76,14 +81,10 @@ class CashGuard(Guard):
         self.min_commission = min_commission
         self.slippage_rate = slippage_rate
 
-    def _lot_size_for(self, symbol: str) -> int:
-        return 200 if symbol.startswith("688") else 100
-
     def check(self, order: Order, bar: DayBar, portfolio: Portfolio) -> bool:
         if order.side != "buy":
             return True
 
-        lot = self._lot_size_for(order.symbol)
         # 用实际成交价（含滑点），与 Matcher 结算时保持一致
         fill_price = bar.open * (1 + self.slippage_rate)
         available = portfolio.cash
@@ -92,24 +93,24 @@ class CashGuard(Guard):
             return False
 
         # 先假设按比例收佣：总成本 = n x fill_price x (1 + rate)
-        n = int(available / (fill_price * (1 + self.commission_rate)) / lot) * lot
+        n = int(available / (fill_price * (1 + self.commission_rate)) / 100) * 100
         commission = n * fill_price * self.commission_rate
 
         if commission < self.min_commission:
             # 实际按最低佣金收，重新计算：总成本 = n x fill_price + min_commission
-            n = int(max(available - self.min_commission, 0) / fill_price / lot) * lot
-            # BUG-2 修复：最低佣金路径同样需要兜底，防止因整数截断导致总成本超出可用资金
+            n = int(max(available - self.min_commission, 0) / fill_price / 100) * 100
+            # 最低佣金路径同样需要兜底，防止因整数截断导致总成本超出可用资金
             if n > 0 and n * fill_price + self.min_commission > available:
-                n = max(n - lot, 0)
+                n = max(n - 100, 0)
         else:
             # 比例路径：验证实际总成本（含佣金）不超出可用资金
             # n * fill_price * rate 可能刚超过 min_commission，但四舍五入后实际成本超出 available
             actual_cost = n * fill_price + commission
             if actual_cost > available:
-                n = max(n - lot, 0)
+                n = max(n - 100, 0)
 
         order.shares = min(order.shares, n)
-        return order.shares >= lot
+        return order.shares >= 100
 
 
 class VolumeCapGuard(Guard):
@@ -118,18 +119,11 @@ class VolumeCapGuard(Guard):
     def __init__(self, ratio: float = 1.0) -> None:
         self.ratio = ratio
 
-    def _lot_size_for(self, symbol: str) -> int:
-        return 200 if symbol.startswith("688") else 100
-
     def check(self, order: Order, bar: DayBar, portfolio: Portfolio) -> bool:
         if self.ratio >= 1.0:
             return True
-        lot = self._lot_size_for(order.symbol)
         max_shares = int(bar.volume * self.ratio)
         if order.shares > max_shares:
             # 截断后按手数对齐，防止产生无法正常卖出的零散股
-            order.shares = (max_shares // lot) * lot
+            order.shares = (max_shares // 100) * 100
         return order.shares > 0
-
-
-DEFAULT_GUARD_CHAIN: list[type[Guard]] = [HaltGuard, LimitGuard, T1Guard, AvailableSharesGuard, CashGuard, VolumeCapGuard]

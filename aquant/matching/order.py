@@ -14,3 +14,4 @@ class Order:
     side: Literal["buy", "sell"]
     shares: int
     locked: bool = field(default=False)
+    liquidate: bool = field(default=False)  # True 表示清仓指令（target_shares == 0）

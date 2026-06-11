@@ -34,7 +34,7 @@ def _run_fold(args: tuple) -> dict:
         params = dict(zip(keys, combo, strict=True))
         row = _run_single(strategy_cls, params, train_cfg, data_source)
         score = row.get(metric, float("-inf"))
-        if isinstance(score, (int, float)) and score > best_score:
+        if isinstance(score, int | float) and score > best_score:
             best_score = float(score)
             best_params = params
 
@@ -69,7 +69,7 @@ def walk_forward(strategy_cls: type[Strategy], param_grid: dict[str, list], conf
     keys = list(param_grid.keys())
     combinations = list(itertools.product(*[param_grid[k] for k in keys]))
 
-    # BUG-5 修复：param_grid 有键但值列表为空时（如 {"x": []}），combinations 为空，
+    # param_grid 有键但值列表为空时（如 {"x": []}），combinations 为空，
     # _run_fold 里 combinations[0] 会 IndexError，提前返回避免崩溃
     if not combinations:
         return pl.DataFrame()
@@ -99,10 +99,7 @@ def walk_forward(strategy_cls: type[Strategy], param_grid: dict[str, list], conf
         try:
             pickle.dumps(data_source)
         except Exception as exc:
-            raise ValueError(
-                "data_source 不可序列化，多进程模式下需实现 __getstate__/__setstate__ 或使用懒连接。"
-                f"原始错误：{exc}"
-            ) from exc
+            raise ValueError(f"data_source 不可序列化，多进程模式下需实现 __getstate__/__setstate__ 或使用懒连接。原始错误：{exc}") from exc
 
         workers = n_jobs if n_jobs > 0 else multiprocessing.cpu_count()
         with multiprocessing.Pool(processes=workers) as pool:

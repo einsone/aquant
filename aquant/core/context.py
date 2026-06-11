@@ -20,7 +20,7 @@ class Context:
             每个 PositionView 包含 shares、tradeable_shares、cost_basis、
             market_value、last_close 字段。
         cash: 当前可用现金。
-        total_value: cash 加所有持仓 market_value 之和。
+        total_value: cash 加所有持仓以 last_close 估算的市值之和。
             基于前一日收盘价估值——框架在信号生成前不以当日开盘价重新估值。
     """
 

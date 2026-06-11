@@ -1,45 +1,45 @@
-[[repos]]
-repo = "https://github.com/pre-commit/pre-commit-hooks"
-rev = "v5.0.0"
-hooks = [
-  { id = "trailing-whitespace" },
-  { id = "end-of-file-fixer" },
-  { id = "mixed-line-ending", args = ["--fix=lf"] },
-  { id = "check-merge-conflict" },
-  { id = "check-added-large-files", args = ["--maxkb=1024"] },
-  { id = "check-case-conflict" },
-  { id = "check-yaml" },
-  { id = "check-json" },
-  { id = "check-toml" },
-]
+#:schema https://www.schemastore.org/prek.json
 
 [[repos]]
-repo = "https://github.com/gitleaks/gitleaks"
-rev = "v8.27.2"
-hooks = [{ id = "gitleaks" }]
+    repo = "https://github.com/pre-commit/pre-commit-hooks"
+    rev = "v5.0.0"
+    hooks = [
+        { id = "trailing-whitespace" },
+        { id = "end-of-file-fixer" },
+        { id = "mixed-line-ending", args = [
+            "--fix=lf",
+        ] },
+        { id = "check-merge-conflict" },
+        { id = "check-added-large-files", args = [
+            "--maxkb=1024",
+        ] },
+        { id = "check-case-conflict" },
+        { id = "check-yaml" },
+        { id = "check-json" },
+        { id = "check-toml" },
+    ]
 
 [[repos]]
-repo = "https://github.com/shellcheck-py/shellcheck-py"
-rev = "v0.10.0.1"
-hooks = [{ id = "shellcheck" }]
+    repo  = "https://github.com/gitleaks/gitleaks"
+    rev   = "v8.27.2"
+    hooks = [{ id = "gitleaks" }]
 
 [[repos]]
-repo = "https://github.com/igorshubovych/markdownlint-cli"
-rev = "v0.45.0"
-hooks = [{ id = "markdownlint" }]
+    repo  = "https://github.com/shellcheck-py/shellcheck-py"
+    rev   = "v0.10.0.1"
+    hooks = [{ id = "shellcheck" }]
 
 [[repos]]
-repo = "https://github.com/ComPWA/mirrors-taplo"
-rev = "v0.9.3"
-hooks = [
-  { id = "taplo-format" },
-  { id = "taplo-lint" },
-]
+    repo  = "https://github.com/igorshubovych/markdownlint-cli"
+    rev   = "v0.45.0"
+    hooks = [{ id = "markdownlint" }]
 
 [[repos]]
-repo = "https://github.com/astral-sh/ruff-pre-commit"
-rev = "v0.11.13"
-hooks = [
-  { id = "ruff", args = ["--fix"] },
-  { id = "ruff-format" },
-]
+    repo  = "https://github.com/ComPWA/mirrors-taplo"
+    rev   = "v0.9.3"
+    hooks = [{ id = "taplo-format" }, { id = "taplo-lint", args = ["--no-schema"] }]
+
+[[repos]]
+    repo  = "https://github.com/astral-sh/ruff-pre-commit"
+    rev   = "v0.11.13"
+    hooks = [{ id = "ruff", args = ["--fix"] }, { id = "ruff-format" }]

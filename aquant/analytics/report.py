@@ -10,6 +10,7 @@
     # 或直接在浏览器打开
     render_html(result, open_browser=True)
 """
+
 from __future__ import annotations
 
 import json
@@ -45,11 +46,7 @@ _METRIC_LABELS: dict[str, str] = {
 }
 
 # 需要格式化为百分比的指标
-_PCT_METRICS = {
-    "total_return", "annualized_return", "annualized_volatility",
-    "max_drawdown", "alpha", "benchmark_annualized_return",
-    "excess_annualized_return", "win_rate", "benchmark_coverage",
-}
+_PCT_METRICS = {"total_return", "annualized_return", "annualized_volatility", "max_drawdown", "alpha", "benchmark_annualized_return", "excess_annualized_return", "win_rate", "benchmark_coverage"}
 
 
 def _fmt(key: str, val: float | int) -> str:
@@ -65,6 +62,7 @@ def _fmt(key: str, val: float | int) -> str:
 # ---------------------------------------------------------------------------
 # 数据提取
 # ---------------------------------------------------------------------------
+
 
 def _extract_nav(result: BacktestResult) -> tuple[list[str], list[float], list[float]]:
     """返回 (dates, nav_values, cash_values)。"""
@@ -89,16 +87,7 @@ def _extract_drawdown(nav_values: list[float]) -> list[float]:
 def _extract_trades(result: BacktestResult) -> list[dict]:
     trades = []
     for t in result.portfolio.trade_log:
-        trades.append({
-            "date": str(t.date),
-            "symbol": t.symbol,
-            "side": "买入" if t.side == "buy" else "卖出",
-            "shares": t.shares,
-            "price": round(t.price, 4),
-            "commission": round(t.commission, 2),
-            "stamp_duty": round(t.stamp_duty, 2),
-            "pnl": round(t.pnl, 2),
-        })
+        trades.append({"date": str(t.date), "symbol": t.symbol, "side": "买入" if t.side == "buy" else "卖出", "shares": t.shares, "price": round(t.price, 4), "commission": round(t.commission, 2), "stamp_duty": round(t.stamp_duty, 2), "pnl": round(t.pnl, 2)})
     return trades
 
 
@@ -483,6 +472,7 @@ renderTable();
 # 公开 API
 # ---------------------------------------------------------------------------
 
+
 def render_html(result: BacktestResult, path: str = "backtest_report.html", open_browser: bool = False) -> str:
     """生成 HTML 回测报告。
 
@@ -516,17 +506,7 @@ def render_html(result: BacktestResult, path: str = "backtest_report.html", open
             nav_b.append(nav_b[-1] * (1 + r))
         bench_nav = nav_b[1:]  # 去掉前置 1.0，与 dates 对齐
 
-    data = {
-        "metrics": result.metrics,
-        "dates": dates,
-        "nav": navs,
-        "cash": cash,
-        "drawdown": drawdown,
-        "pos_count": pos_count,
-        "trades": trades,
-        "bench_dates": bench_dates,
-        "bench_nav": bench_nav,
-    }
+    data = {"metrics": result.metrics, "dates": dates, "nav": navs, "cash": cash, "drawdown": drawdown, "pos_count": pos_count, "trades": trades, "bench_dates": bench_dates, "bench_nav": bench_nav}
 
     html = _HTML_TEMPLATE.replace("__DATA_JSON__", json.dumps(data, ensure_ascii=False, default=str))
     html = html.replace("__LABELS_JSON__", json.dumps(_METRIC_LABELS, ensure_ascii=False))
@@ -537,6 +517,7 @@ def render_html(result: BacktestResult, path: str = "backtest_report.html", open
 
     if open_browser:
         import webbrowser
+
         webbrowser.open(out_path.as_uri())
 
     return str(out_path)

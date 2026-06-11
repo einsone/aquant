@@ -16,6 +16,7 @@ from aquant.matching.matcher import Matcher
 from aquant.portfolio.portfolio import Portfolio
 from aquant.strategy.signal import Signal
 
+
 logger = get_logger(__name__)
 
 
@@ -109,13 +110,7 @@ class Engine:
         self._matcher = Matcher(cost_model=self._cost_model, rebalance_threshold=config.rebalance_threshold, volume_cap_ratio=config.volume_cap_ratio)
 
         self._trading_days = trading_days
-        logger.info(
-            "回测初始化完成",
-            start=str(trading_days[0]),
-            end=str(trading_days[-1]),
-            trading_days=len(trading_days),
-            initial_capital=config.initial_capital,
-        )
+        logger.info("回测初始化完成", start=str(trading_days[0]), end=str(trading_days[-1]), trading_days=len(trading_days), initial_capital=config.initial_capital)
         self._adjuster.preload(config.start, config.end, data_source)
         self._queue = self._build_queue(trading_days)
 
@@ -167,15 +162,7 @@ class Engine:
                 day_idx += 1
                 if day_idx % log_interval == 0 or day_idx == total_days:
                     pct = day_idx / total_days * 100
-                    logger.info(
-                        "回测进度",
-                        date=str(event.date),
-                        day=day_idx,
-                        total=total_days,
-                        pct=f"{pct:.0f}%",
-                        warmup=self._day_is_warmup,
-                        portfolio_value=round(self._portfolio.total_value, 2),
-                    )
+                    logger.info("回测进度", date=str(event.date), day=day_idx, total=total_days, pct=f"{pct:.0f}%", warmup=self._day_is_warmup, portfolio_value=round(self._portfolio.total_value, 2))
 
             elif event.phase == Phase.FILL:
                 # 执行前一交易日 SIGNAL 阶段缓存的信号，以今日（T+1）开盘价成交
@@ -185,12 +172,7 @@ class Engine:
                 if has_pending:
                     symbols = {s.symbol for s in self._pending_signals} | self._portfolio.symbols
                     self._day_bars = self._data_source.load_bars(event.date, symbols)
-                    logger.debug(
-                        "执行调仓",
-                        date=str(event.date),
-                        signals=len(self._pending_signals),
-                        mode=self._strategy.rebalance_mode,
-                    )
+                    logger.debug("执行调仓", date=str(event.date), signals=len(self._pending_signals), mode=self._strategy.rebalance_mode)
                     self._matcher.execute(self._pending_signals, self._portfolio, self._day_bars, event.date, self._strategy.rebalance_mode)
                     self._pending_signals = []
 
@@ -232,11 +214,6 @@ class Engine:
         result = BacktestResult(portfolio=self._portfolio, benchmark_df=self._config.benchmark)
         result.compute_metrics()
         logger.info(
-            "回测完成",
-            total_return=f"{result.metrics.get('total_return', 0) * 100:.2f}%",
-            sharpe=round(result.metrics.get("sharpe", 0), 4),
-            max_drawdown=f"{result.metrics.get('max_drawdown', 0) * 100:.2f}%",
-            trades=len(self._portfolio.trade_log),
-            final_value=round(self._portfolio.total_value, 2),
+            "回测完成", total_return=f"{result.metrics.get('total_return', 0) * 100:.2f}%", sharpe=round(result.metrics.get("sharpe", 0), 4), max_drawdown=f"{result.metrics.get('max_drawdown', 0) * 100:.2f}%", trades=len(self._portfolio.trade_log), final_value=round(self._portfolio.total_value, 2)
         )
         return result

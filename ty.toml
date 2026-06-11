@@ -1,0 +1,17 @@
+# ty 类型检查配置
+# 文档: https://docs.astral.sh/ty/reference/configuration/
+
+[environment]
+    python-version = "3.12"
+
+[src]
+    respect-ignore-files = true # 是否遵循 .gitignore 等忽略文件
+
+[terminal]
+    error-on-warning = false  # 是否将 warning 视为非零退出
+    output-format    = "full" # 诊断输出格式: full | concise | github | gitlab | junit
+
+[analysis]
+    respect-type-ignore-comments = true # 是否尊重 `# type: ignore` 注释
+
+[rules]

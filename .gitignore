@@ -1,1 +1,17 @@
+# Python
 __pycache__/
+*.py[cod]
+.ruff_cache/
+
+# 虚拟环境
+.venv/
+venv/
+
+# 密钥与凭证
+.env
+.env.*
+*.pem
+*.key
+*.p12
+credentials*
+secrets*

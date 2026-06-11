@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
+
 if TYPE_CHECKING:
     from aquant.core.engine import BacktestResult
 
@@ -121,79 +122,79 @@ _HTML_TEMPLATE = """\
 <title>回测报告</title>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <style>
-  *, *::before, *::after {{ box-sizing: border-box; }}
-  body {{
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
     margin: 0; padding: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     background: #f0f2f5; color: #1a1a2e;
-  }}
-  header {{
+  }
+  header {
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     color: #e2e8f0; padding: 24px 40px;
     display: flex; align-items: center; justify-content: space-between;
-  }}
-  header h1 {{ margin: 0; font-size: 1.6rem; font-weight: 600; letter-spacing: .5px; }}
-  header span {{ font-size: .85rem; opacity: .7; }}
-  .container {{ max-width: 1400px; margin: 0 auto; padding: 32px 24px; }}
+  }
+  header h1 { margin: 0; font-size: 1.6rem; font-weight: 600; letter-spacing: .5px; }
+  header span { font-size: .85rem; opacity: .7; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 32px 24px; }
   /* 指标卡片 */
-  .metrics-grid {{
+  .metrics-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 14px; margin-bottom: 32px;
-  }}
-  .metric-card {{
+  }
+  .metric-card {
     background: #fff; border-radius: 12px;
     padding: 18px 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08);
     transition: transform .15s, box-shadow .15s;
-  }}
-  .metric-card:hover {{ transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.12); }}
-  .metric-card .label {{ font-size: .72rem; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .4px; }}
-  .metric-card .value {{ font-size: 1.35rem; font-weight: 700; color: #1e293b; }}
-  .metric-card .value.pos {{ color: #16a34a; }}
-  .metric-card .value.neg {{ color: #dc2626; }}
+  }
+  .metric-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.12); }
+  .metric-card .label { font-size: .72rem; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .4px; }
+  .metric-card .value { font-size: 1.35rem; font-weight: 700; color: #1e293b; }
+  .metric-card .value.pos { color: #dc2626; }
+  .metric-card .value.neg { color: #16a34a; }
   /* 图表区域 */
-  .chart-row {{
+  .chart-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px; margin-bottom: 20px;
-  }}
-  .chart-row.full {{ grid-template-columns: 1fr; }}
-  .card {{
+  }
+  .chart-row.full { grid-template-columns: 1fr; }
+  .card {
     background: #fff; border-radius: 12px;
     padding: 20px 20px 8px;
     box-shadow: 0 1px 4px rgba(0,0,0,.08);
-  }}
-  .card h2 {{
+  }
+  .card h2 {
     margin: 0 0 16px; font-size: .95rem;
     font-weight: 600; color: #334155;
     border-left: 3px solid #6366f1; padding-left: 10px;
-  }}
+  }
   /* 交易明细表 */
-  .table-wrap {{ overflow-x: auto; }}
-  table {{ width: 100%; border-collapse: collapse; font-size: .82rem; }}
-  thead tr {{ background: #f1f5f9; }}
-  th {{ padding: 10px 12px; text-align: left; color: #475569; font-weight: 600; white-space: nowrap; }}
-  tbody tr {{ border-bottom: 1px solid #f1f5f9; transition: background .1s; }}
-  tbody tr:hover {{ background: #f8fafc; }}
-  td {{ padding: 9px 12px; color: #334155; white-space: nowrap; }}
-  .buy {{ color: #dc2626; font-weight: 600; }}
-  .sell {{ color: #16a34a; font-weight: 600; }}
-  .pnl-pos {{ color: #16a34a; }}
-  .pnl-neg {{ color: #dc2626; }}
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  thead tr { background: #f1f5f9; }
+  th { padding: 10px 12px; text-align: left; color: #475569; font-weight: 600; white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid #f1f5f9; transition: background .1s; }
+  tbody tr:hover { background: #f8fafc; }
+  td { padding: 9px 12px; color: #334155; white-space: nowrap; }
+  .buy { color: #dc2626; font-weight: 600; }
+  .sell { color: #16a34a; font-weight: 600; }
+  .pnl-pos { color: #dc2626; }
+  .pnl-neg { color: #16a34a; }
   /* 筛选栏 */
-  .filter-bar {{ display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }}
-  .filter-bar input, .filter-bar select {{
+  .filter-bar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filter-bar input, .filter-bar select {
     padding: 7px 12px; border: 1px solid #e2e8f0; border-radius: 8px;
     font-size: .82rem; outline: none; background: #f8fafc;
-  }}
-  .filter-bar input:focus, .filter-bar select:focus {{ border-color: #6366f1; }}
-  .page-ctrl {{ display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: .82rem; color: #64748b; }}
-  .page-ctrl button {{
+  }
+  .filter-bar input:focus, .filter-bar select:focus { border-color: #6366f1; }
+  .page-ctrl { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: .82rem; color: #64748b; }
+  .page-ctrl button {
     padding: 5px 12px; border: 1px solid #e2e8f0; border-radius: 6px;
     background: #fff; cursor: pointer; font-size: .82rem;
-  }}
-  .page-ctrl button:disabled {{ opacity: .4; cursor: default; }}
-  footer {{ text-align: center; padding: 24px; font-size: .75rem; color: #94a3b8; }}
+  }
+  .page-ctrl button:disabled { opacity: .4; cursor: default; }
+  footer { text-align: center; padding: 24px; font-size: .75rem; color: #94a3b8; }
 </style>
 </head>
 <body>
@@ -287,123 +288,123 @@ const DATA = __DATA_JSON__;
 // ---- 指标卡片 ----
 const LABELS = __LABELS_JSON__;
 const PCT_KEYS = __PCT_KEYS_JSON__;
-function fmtMetric(key, val) {{
+function fmtMetric(key, val) {
   if (PCT_KEYS.includes(key)) return (val * 100).toFixed(2) + '%';
   if (key === 'max_drawdown_duration_days') return parseInt(val) + ' 天';
   if (Number.isInteger(val)) return val.toString();
   return val.toFixed(4);
-}}
-(function renderMetrics() {{
+}
+(function renderMetrics() {
   const grid = document.getElementById('metrics-grid');
-  for (const [k, v] of Object.entries(DATA.metrics)) {{
+  for (const [k, v] of Object.entries(DATA.metrics)) {
     const label = LABELS[k] || k;
     const fmt = fmtMetric(k, v);
     let cls = '';
     if (['total_return','annualized_return','sharpe','calmar','alpha','information_ratio',
-         'excess_annualized_return','win_rate','profit_loss_ratio'].includes(k)) {{
+         'excess_annualized_return','win_rate','profit_loss_ratio'].includes(k)) {
       cls = v >= 0 ? 'pos' : 'neg';
-    }}
+    }
     if (['max_drawdown','annualized_volatility'].includes(k)) cls = 'neg';
-    grid.innerHTML += `<div class="metric-card"><div class="label">${{label}}</div><div class="value ${{cls}}">${{fmt}}</div></div>`;
-  }}
-}})();
+    grid.innerHTML += `<div class="metric-card"><div class="label">${label}</div><div class="value ${cls}">${fmt}</div></div>`;
+  }
+})();
 
 // ---- 日期范围 header ----
-if (DATA.dates.length) {{
+if (DATA.dates.length) {
   document.getElementById('header-range').textContent =
     DATA.dates[0] + '  ～  ' + DATA.dates[DATA.dates.length - 1];
-}}
+}
 
 // ---- 颜色 ----
-const C = {{ nav:'#6366f1', bench:'#f59e0b', cash:'#94a3b8', dd:'#ef4444', pos:'#22c55e' }};
-const layout_base = {{
-  margin: {{t:10, r:20, b:40, l:60}},
+const C = { nav:'#6366f1', bench:'#f59e0b', cash:'#94a3b8', dd:'#ef4444', pos:'#22c55e' };
+const layout_base = {
+  margin: {t:10, r:20, b:40, l:60},
   paper_bgcolor:'transparent', plot_bgcolor:'transparent',
-  font: {{family:'-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif', size:12, color:'#475569'}},
-  xaxis: {{gridcolor:'#f1f5f9', linecolor:'#e2e8f0'}},
-  yaxis: {{gridcolor:'#f1f5f9', linecolor:'#e2e8f0'}},
+  font: {family:'-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif', size:12, color:'#475569'},
+  xaxis: {gridcolor:'#f1f5f9', linecolor:'#e2e8f0'},
+  yaxis: {gridcolor:'#f1f5f9', linecolor:'#e2e8f0'},
   hovermode:'x unified',
-  legend: {{orientation:'h', y:-0.18, x:0}},
-}};
+  legend: {orientation:'h', y:-0.18, x:0},
+};
 
 // ---- 净值图 ----
-(function() {{
-  const traces = [{{
+(function() {
+  const traces = [{
     x: DATA.dates, y: DATA.nav,
     name: '策略净值', type: 'scatter', mode: 'lines',
-    line: {{color: C.nav, width: 2}},
-    hovertemplate: '%{{y:,.0f}}<extra>策略</extra>'
-  }}];
-  if (DATA.bench_dates && DATA.bench_nav) {{
-    traces.push({{
+    line: {color: C.nav, width: 2},
+    hovertemplate: '%{y:,.0f}<extra>策略</extra>'
+  }];
+  if (DATA.bench_dates && DATA.bench_nav) {
+    traces.push({
       x: DATA.bench_dates, y: DATA.bench_nav,
       name: '基准', type: 'scatter', mode: 'lines',
-      line: {{color: C.bench, width: 1.5, dash: 'dot'}},
-      hovertemplate: '%{{y:.4f}}<extra>基准</extra>'
-    }});
-  }}
-  traces.push({{
+      line: {color: C.bench, width: 1.5, dash: 'dot'},
+      hovertemplate: '%{y:.4f}<extra>基准</extra>'
+    });
+  }
+  traces.push({
     x: DATA.dates, y: DATA.cash,
     name: '现金', type: 'scatter', mode: 'lines',
-    line: {{color: C.cash, width: 1, dash: 'dot'}},
+    line: {color: C.cash, width: 1, dash: 'dot'},
     visible: 'legendonly',
-    hovertemplate: '%{{y:,.0f}}<extra>现金</extra>'
-  }});
+    hovertemplate: '%{y:,.0f}<extra>现金</extra>'
+  });
   Plotly.newPlot('chart-nav', traces,
-    Object.assign({{}, layout_base, {{yaxis: {{...layout_base.yaxis, tickformat:',.0f'}}}}),
-    {{responsive:true, displayModeBar:true, modeBarButtonsToRemove:['lasso2d','select2d']}});
-}})();
+    Object.assign({}, layout_base, {yaxis: {...layout_base.yaxis, tickformat:',.0f'}}),
+    {responsive:true, displayModeBar:true, modeBarButtonsToRemove:['lasso2d','select2d']});
+})();
 
 // ---- 回撤图 ----
-(function() {{
-  Plotly.newPlot('chart-dd', [{{
+(function() {
+  Plotly.newPlot('chart-dd', [{
     x: DATA.dates, y: DATA.drawdown,
     name: '回撤', type: 'scatter', mode: 'lines', fill: 'tozeroy',
-    line: {{color: C.dd, width: 1.5}},
+    line: {color: C.dd, width: 1.5},
     fillcolor: 'rgba(239,68,68,0.15)',
-    hovertemplate: '%{{y:.2f}}%<extra>回撤</extra>'
-  }}],
-  Object.assign({{}, layout_base, {{
-    yaxis: {{...layout_base.yaxis, ticksuffix:'%'}},
+    hovertemplate: '%{y:.2f}%<extra>回撤</extra>'
+  }],
+  Object.assign({}, layout_base, {
+    yaxis: {...layout_base.yaxis, ticksuffix:'%'},
     showlegend: false,
-    margin: {{t:10, r:20, b:40, l:55}}
-  }}),
-  {{responsive:true, displayModeBar:false}});
-}})();
+    margin: {t:10, r:20, b:40, l:55}
+  }),
+  {responsive:true, displayModeBar:false});
+})();
 
 // ---- 持仓数 ----
-(function() {{
-  Plotly.newPlot('chart-pos', [{{
+(function() {
+  Plotly.newPlot('chart-pos', [{
     x: DATA.dates, y: DATA.pos_count,
     name: '持仓数', type: 'bar',
-    marker: {{color: C.pos, opacity: .8}},
-    hovertemplate: '%{{y}} 只<extra></extra>'
-  }}],
-  Object.assign({{}}, layout_base, {{
+    marker: {color: C.pos, opacity: .8},
+    hovertemplate: '%{y} 只<extra></extra>'
+  }],
+  Object.assign({}, layout_base, {
     showlegend: false,
-    margin: {{t:10, r:20, b:40, l:45}}
-  }}),
-  {{responsive:true, displayModeBar:false}});
-}})();
+    margin: {t:10, r:20, b:40, l:45}
+  }),
+  {responsive:true, displayModeBar:false});
+})();
 
 // ---- 日收益率分布 ----
-(function() {{
+(function() {
   const nav = DATA.nav;
   const rets = [];
   for (let i = 1; i < nav.length; i++) rets.push((nav[i] / nav[i-1] - 1) * 100);
-  Plotly.newPlot('chart-ret-hist', [{{
+  Plotly.newPlot('chart-ret-hist', [{
     x: rets, type: 'histogram', nbinsx: 50,
     name: '日收益率',
-    marker: {{color: C.nav, opacity: .75}},
-    hovertemplate: '%{{x:.2f}}%: %{{y}} 天<extra></extra>'
-  }}],
-  Object.assign({{}}, layout_base, {{
-    xaxis: {{...layout_base.xaxis, ticksuffix:'%'}},
+    marker: {color: C.nav, opacity: .75},
+    hovertemplate: '%{x:.2f}%: %{y} 天<extra></extra>'
+  }],
+  Object.assign({}, layout_base, {
+    xaxis: {...layout_base.xaxis, ticksuffix:'%'},
     showlegend: false,
-    margin: {{t:10, r:20, b:40, l:45}}
-  }}),
-  {{responsive:true, displayModeBar:false}});
-}})();
+    margin: {t:10, r:20, b:40, l:45}
+  }),
+  {responsive:true, displayModeBar:false});
+})();
 
 // ---- 交易明细 ----
 let allTrades = DATA.trades.slice();
@@ -415,38 +416,38 @@ let sortAsc = false;
 
 document.getElementById('trade-total').textContent = allTrades.length;
 
-function applyFilter() {{
+function applyFilter() {
   const sym = document.getElementById('f-symbol').value.trim().toUpperCase();
   const side = document.getElementById('f-side').value;
   const from = document.getElementById('f-date-from').value;
   const to = document.getElementById('f-date-to').value;
-  filtered = allTrades.filter(t => {{
+  filtered = allTrades.filter(t => {
     if (sym && !t.symbol.includes(sym)) return false;
     if (side && t.side !== side) return false;
     if (from && t.date < from) return false;
     if (to && t.date > to) return false;
     return true;
-  }});
+  });
   currentPage = 1;
   renderTable();
-}}
+}
 
-function sortBy(key) {{
-  if (sortKey === key) sortAsc = !sortAsc; else {{ sortKey = key; sortAsc = true; }}
-  filtered.sort((a, b) => {{
+function sortBy(key) {
+  if (sortKey === key) sortAsc = !sortAsc; else { sortKey = key; sortAsc = true; }
+  filtered.sort((a, b) => {
     const va = a[key], vb = b[key];
     return sortAsc ? (va < vb ? -1 : va > vb ? 1 : 0) : (va > vb ? -1 : va < vb ? 1 : 0);
-  }});
+  });
   renderTable();
-}}
+}
 
-function changePage(delta) {{
+function changePage(delta) {
   const total = Math.max(1, Math.ceil(filtered.length / pageSize));
   currentPage = Math.max(1, Math.min(total, currentPage + delta));
   renderTable();
-}}
+}
 
-function renderTable() {{
+function renderTable() {
   const total = Math.max(1, Math.ceil(filtered.length / pageSize));
   document.getElementById('page-info').textContent = currentPage + ' / ' + total;
   document.getElementById('btn-prev').disabled = currentPage <= 1;
@@ -454,22 +455,22 @@ function renderTable() {{
   const start = (currentPage - 1) * pageSize;
   const rows = filtered.slice(start, start + pageSize);
   const tbody = document.getElementById('trade-tbody');
-  tbody.innerHTML = rows.map(t => {{
+  tbody.innerHTML = rows.map(t => {
     const sideCls = t.side === '买入' ? 'buy' : 'sell';
     const pnlCls = t.pnl > 0 ? 'pnl-pos' : t.pnl < 0 ? 'pnl-neg' : '';
     const pnlFmt = t.pnl === 0 ? '-' : (t.pnl > 0 ? '+' : '') + t.pnl.toFixed(2);
     return `<tr>
-      <td>${{t.date}}</td>
-      <td><code>${{t.symbol}}</code></td>
-      <td class="${{sideCls}}">${{t.side}}</td>
-      <td>${{t.shares.toLocaleString()}}</td>
-      <td>${{t.price.toFixed(4)}}</td>
-      <td>${{t.commission.toFixed(2)}}</td>
-      <td>${{t.stamp_duty.toFixed(2)}}</td>
-      <td class="${{pnlCls}}">${{pnlFmt}}</td>
+      <td>${t.date}</td>
+      <td><code>${t.symbol}</code></td>
+      <td class="${sideCls}">${t.side}</td>
+      <td>${t.shares.toLocaleString()}</td>
+      <td>${t.price.toFixed(4)}</td>
+      <td>${t.commission.toFixed(2)}</td>
+      <td>${t.stamp_duty.toFixed(2)}</td>
+      <td class="${pnlCls}">${pnlFmt}</td>
     </tr>`;
-  }}).join('');
-}}
+  }).join('');
+}
 
 renderTable();
 </script>
@@ -499,7 +500,7 @@ def render_html(result: BacktestResult, path: str = "backtest_report.html", open
 
     dates, navs, cash = _extract_nav(result)
     drawdown = _extract_drawdown(navs)
-    pos_dates, pos_count = _extract_position_count(result)
+    _, pos_count = _extract_position_count(result)
     trades = _extract_trades(result)
 
     # 基准净值（若有 benchmark_df，按基准日期段重建累计净值）
@@ -507,7 +508,6 @@ def render_html(result: BacktestResult, path: str = "backtest_report.html", open
     bench_nav: list[float] | None = None
     bdf = result._benchmark_df
     if bdf is not None and "date" in bdf.columns and "return" in bdf.columns:
-        import polars as pl
         bdf_sorted = bdf.sort("date")
         bench_dates = [str(d) for d in bdf_sorted["date"].to_list()]
         rets = bdf_sorted["return"].to_list()

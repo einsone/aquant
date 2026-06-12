@@ -143,6 +143,10 @@ def run_single() -> None:
     print(f"\n总成交笔数: {len(result.portfolio.trade_log)}")
     print(f"最终组合市值: {result.portfolio.total_value:,.0f}")
 
+    # 生成 HTML 报告并在浏览器打开
+    report_path = result.render_html(path="demo_report.html", open_browser=True)
+    print(f"\n📊 HTML 报告已生成: {report_path}")
+
 
 # ---------------------------------------------------------------------------
 # 5. 网格搜索

@@ -19,7 +19,3 @@
 [[overrides]]
     include = ["aquant/data/alds.py"]
     rules   = { unresolved-import = "ignore" }
-
-[[overrides]]
-    include = ["aquant/data/bigquant.py"]
-    rules   = { unresolved-import = "ignore" }

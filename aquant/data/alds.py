@@ -137,3 +137,40 @@ class ALDSDataSource(DataSource):
             result[sym] = DayBar(symbol=sym, date=row["date"], open=row["open"], close=row["close"], high=row["high"], low=row["low"], volume=row["volume"], up_limit=row["up_limit"], down_limit=row["down_limit"], is_halted=row["is_halted"])
 
         return result
+
+    def load_adjustments(self, start: date, end: date) -> list:
+        """加载复权数据。
+
+        参数
+        ----
+        start : date
+            起始日期
+        end : date
+            结束日期
+
+        返回
+        ----
+        list
+            复权事件列表
+        """
+        # TODO: 实现从 ALDS 加载复权数据
+        return []
+
+    def load_delisted(self, start: date, end: date) -> dict[date, list[str]]:
+        """加载退市数据。
+
+        参数
+        ----
+        start : date
+            起始日期
+        end : date
+            结束日期
+
+        返回
+        ----
+        dict[date, list[str]]
+            日期 -> 退市股票列表的字典
+        """
+        # TODO: 实现从 ALDS 加载退市数据
+        return {}
+

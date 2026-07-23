@@ -183,6 +183,44 @@ class CSVDataSource(DataSource):
 
         return result
 
+    def load_adjustments(self, start: date, end: date) -> list:
+        """加载复权数据。
+
+        CSV 数据源不包含复权数据，返回空列表。
+
+        参数
+        ----
+        start : date
+            起始日期
+        end : date
+            结束日期
+
+        返回
+        ----
+        list
+            空列表
+        """
+        return []
+
+    def load_delisted(self, start: date, end: date) -> dict[date, list[str]]:
+        """加载退市数据。
+
+        CSV 数据源不包含退市数据，返回空字典。
+
+        参数
+        ----
+        start : date
+            起始日期
+        end : date
+            结束日期
+
+        返回
+        ----
+        dict[date, list[str]]
+            空字典
+        """
+        return {}
+
 
 def create_sample_csv(data_dir: str, start: date, end: date, symbols: list[str]) -> None:
     """创建示例 CSV 文件（用于测试）。

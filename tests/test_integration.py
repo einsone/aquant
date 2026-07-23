@@ -1,13 +1,13 @@
 """端到端集成测试"""
 
-import pytest
 from datetime import date
-from aquant.core.engine import Engine, BacktestConfig
-from aquant.strategy.base import Strategy
-from aquant.strategy.signal import Signal
+
 from aquant.core.context import Context
+from aquant.core.engine import BacktestConfig, Engine
 from aquant.data.source import DataSource
 from aquant.market.bar import DayBar
+from aquant.strategy.base import Strategy
+from aquant.strategy.signal import Signal
 
 
 class MockDataSource(DataSource):
@@ -15,13 +15,7 @@ class MockDataSource(DataSource):
 
     def __init__(self):
         # 模拟 3 只股票的 5 天数据
-        self.calendar = [
-            date(2023, 1, 3),
-            date(2023, 1, 4),
-            date(2023, 1, 5),
-            date(2023, 1, 6),
-            date(2023, 1, 9),
-        ]
+        self.calendar = [date(2023, 1, 3), date(2023, 1, 4), date(2023, 1, 5), date(2023, 1, 6), date(2023, 1, 9)]
 
         # 股票 A：稳定上涨
         self.stock_a_prices = [10.0, 10.2, 10.5, 10.8, 11.0]
@@ -44,48 +38,15 @@ class MockDataSource(DataSource):
 
         if "000001.SZ" in symbols:
             price = self.stock_a_prices[idx]
-            bars["000001.SZ"] = DayBar(
-                symbol="000001.SZ",
-                date=dt,
-                open=price * 0.99,
-                high=price * 1.02,
-                low=price * 0.98,
-                close=price,
-                volume=1000000,
-                up_limit=price * 1.1,
-                down_limit=price * 0.9,
-                is_halted=False,
-            )
+            bars["000001.SZ"] = DayBar(symbol="000001.SZ", date=dt, open=price * 0.99, high=price * 1.02, low=price * 0.98, close=price, volume=1000000, up_limit=price * 1.1, down_limit=price * 0.9, is_halted=False)
 
         if "000002.SZ" in symbols:
             price = self.stock_b_prices[idx]
-            bars["000002.SZ"] = DayBar(
-                symbol="000002.SZ",
-                date=dt,
-                open=price * 0.99,
-                high=price * 1.02,
-                low=price * 0.98,
-                close=price,
-                volume=1200000,
-                up_limit=price * 1.1,
-                down_limit=price * 0.9,
-                is_halted=False,
-            )
+            bars["000002.SZ"] = DayBar(symbol="000002.SZ", date=dt, open=price * 0.99, high=price * 1.02, low=price * 0.98, close=price, volume=1200000, up_limit=price * 1.1, down_limit=price * 0.9, is_halted=False)
 
         if "600000.SH" in symbols:
             price = self.stock_c_prices[idx]
-            bars["600000.SH"] = DayBar(
-                symbol="600000.SH",
-                date=dt,
-                open=price * 0.99,
-                high=price * 1.02,
-                low=price * 0.98,
-                close=price,
-                volume=800000,
-                up_limit=price * 1.1,
-                down_limit=price * 0.9,
-                is_halted=False,
-            )
+            bars["600000.SH"] = DayBar(symbol="600000.SH", date=dt, open=price * 0.99, high=price * 1.02, low=price * 0.98, close=price, volume=800000, up_limit=price * 1.1, down_limit=price * 0.9, is_halted=False)
 
         return bars
 
@@ -109,11 +70,7 @@ class MomentumStrategy(Strategy):
     def on_bar(self, context: Context) -> list[Signal]:
         if context.current_date == date(2023, 1, 3):
             # 第一天平均分配
-            return [
-                Signal(symbol="000001.SZ", weight=0.33),
-                Signal(symbol="000002.SZ", weight=0.33),
-                Signal(symbol="600000.SH", weight=0.34),
-            ]
+            return [Signal(symbol="000001.SZ", weight=0.33), Signal(symbol="000002.SZ", weight=0.33), Signal(symbol="600000.SH", weight=0.34)]
 
         # 计算动量并选择最强的股票
         momentum = {}
@@ -168,12 +125,7 @@ def test_end_to_end_buy_and_hold():
     data_source = MockDataSource()
     strategy = BuyAndHoldStrategy(data_source)
 
-    config = BacktestConfig(
-        start=date(2023, 1, 3),
-        end=date(2023, 1, 9),
-        initial_capital=100000.0,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 3), end=date(2023, 1, 9), initial_capital=100000.0, show_progress=False)
 
     engine = Engine(strategy, data_source, config)
     result = engine.run()
@@ -193,12 +145,7 @@ def test_end_to_end_momentum_strategy():
     data_source = MockDataSource()
     strategy = MomentumStrategy(data_source)
 
-    config = BacktestConfig(
-        start=date(2023, 1, 3),
-        end=date(2023, 1, 9),
-        initial_capital=100000.0,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 3), end=date(2023, 1, 9), initial_capital=100000.0, show_progress=False)
 
     engine = Engine(strategy, data_source, config)
     result = engine.run()
@@ -219,12 +166,7 @@ def test_end_to_end_rotation_strategy():
     data_source = MockDataSource()
     strategy = RotationStrategy(data_source)
 
-    config = BacktestConfig(
-        start=date(2023, 1, 3),
-        end=date(2023, 1, 9),
-        initial_capital=100000.0,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 3), end=date(2023, 1, 9), initial_capital=100000.0, show_progress=False)
 
     engine = Engine(strategy, data_source, config)
     result = engine.run()
@@ -323,12 +265,7 @@ def test_end_to_end_multiple_rebalances():
     data_source = MockDataSource()
     strategy = FrequentRebalanceStrategy(data_source)
 
-    config = BacktestConfig(
-        start=date(2023, 1, 3),
-        end=date(2023, 1, 9),
-        initial_capital=100000.0,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 3), end=date(2023, 1, 9), initial_capital=100000.0, show_progress=False)
 
     engine = Engine(strategy, data_source, config)
     result = engine.run()
@@ -353,12 +290,7 @@ def test_end_to_end_empty_signals():
     data_source = MockDataSource()
     strategy = EmptyStrategy(data_source)
 
-    config = BacktestConfig(
-        start=date(2023, 1, 3),
-        end=date(2023, 1, 9),
-        initial_capital=100000.0,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 3), end=date(2023, 1, 9), initial_capital=100000.0, show_progress=False)
 
     engine = Engine(strategy, data_source, config)
     result = engine.run()
@@ -388,12 +320,7 @@ def test_end_to_end_metrics_calculation():
     data_source = MockDataSource()
     strategy = SimpleStrategy(data_source)
 
-    config = BacktestConfig(
-        start=date(2023, 1, 3),
-        end=date(2023, 1, 9),
-        initial_capital=100000.0,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 3), end=date(2023, 1, 9), initial_capital=100000.0, show_progress=False)
 
     engine = Engine(strategy, data_source, config)
     result = engine.run()
@@ -402,13 +329,7 @@ def test_end_to_end_metrics_calculation():
     result.compute_metrics()
 
     # 验证关键指标都存在
-    required_metrics = [
-        "total_return",
-        "annual_return",
-        "sharpe",
-        "max_drawdown",
-        "win_rate",
-    ]
+    required_metrics = ["total_return", "annual_return", "sharpe", "max_drawdown", "win_rate"]
 
     for metric in required_metrics:
         assert metric in result.metrics
@@ -434,12 +355,7 @@ def test_end_to_end_report_generation():
     data_source = MockDataSource()
     strategy = SimpleStrategy(data_source)
 
-    config = BacktestConfig(
-        start=date(2023, 1, 3),
-        end=date(2023, 1, 9),
-        initial_capital=100000.0,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 3), end=date(2023, 1, 9), initial_capital=100000.0, show_progress=False)
 
     engine = Engine(strategy, data_source, config)
     result = engine.run()

@@ -1,13 +1,13 @@
 """测试回测引擎核心功能"""
 
-import pytest
 from datetime import date
-from aquant.core.engine import Engine, BacktestConfig
-from aquant.strategy.base import Strategy
-from aquant.strategy.signal import Signal
+
 from aquant.core.context import Context
+from aquant.core.engine import BacktestConfig, Engine
 from aquant.data.source import DataSource
 from aquant.market.bar import DayBar
+from aquant.strategy.base import Strategy
+from aquant.strategy.signal import Signal
 
 
 class MockDataSource(DataSource):
@@ -15,48 +15,9 @@ class MockDataSource(DataSource):
 
     def __init__(self):
         self.bars_data = {
-            date(2023, 1, 3): {
-                "000001.SZ": DayBar(
-                    symbol="000001.SZ",
-                    date=date(2023, 1, 3),
-                    open=10.0,
-                    high=10.5,
-                    low=9.8,
-                    close=10.2,
-                    volume=1000000,
-                    up_limit=11.0,
-                    down_limit=9.0,
-                    is_halted=False,
-                ),
-            },
-            date(2023, 1, 4): {
-                "000001.SZ": DayBar(
-                    symbol="000001.SZ",
-                    date=date(2023, 1, 4),
-                    open=10.2,
-                    high=10.8,
-                    low=10.0,
-                    close=10.5,
-                    volume=1200000,
-                    up_limit=11.2,
-                    down_limit=9.2,
-                    is_halted=False,
-                ),
-            },
-            date(2023, 1, 5): {
-                "000001.SZ": DayBar(
-                    symbol="000001.SZ",
-                    date=date(2023, 1, 5),
-                    open=10.5,
-                    high=11.0,
-                    low=10.3,
-                    close=10.8,
-                    volume=1500000,
-                    up_limit=11.5,
-                    down_limit=9.5,
-                    is_halted=False,
-                ),
-            },
+            date(2023, 1, 3): {"000001.SZ": DayBar(symbol="000001.SZ", date=date(2023, 1, 3), open=10.0, high=10.5, low=9.8, close=10.2, volume=1000000, up_limit=11.0, down_limit=9.0, is_halted=False)},
+            date(2023, 1, 4): {"000001.SZ": DayBar(symbol="000001.SZ", date=date(2023, 1, 4), open=10.2, high=10.8, low=10.0, close=10.5, volume=1200000, up_limit=11.2, down_limit=9.2, is_halted=False)},
+            date(2023, 1, 5): {"000001.SZ": DayBar(symbol="000001.SZ", date=date(2023, 1, 5), open=10.5, high=11.0, low=10.3, close=10.8, volume=1500000, up_limit=11.5, down_limit=9.5, is_halted=False)},
         }
 
     def load_calendar(self, start: date, end: date) -> list[date]:
@@ -95,12 +56,7 @@ def test_engine_basic_run():
     data_source = MockDataSource()
     strategy = BuyAndHoldStrategy("000001.SZ", data_source)
 
-    config = BacktestConfig(
-        start=date(2023, 1, 3),
-        end=date(2023, 1, 5),
-        initial_capital=100000.0,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 3), end=date(2023, 1, 5), initial_capital=100000.0, show_progress=False)
 
     engine = Engine(strategy, data_source, config)
     result = engine.run()
@@ -116,15 +72,7 @@ def test_engine_with_commission():
     data_source = MockDataSource()
     strategy = BuyAndHoldStrategy("000001.SZ", data_source)
 
-    config = BacktestConfig(
-        start=date(2023, 1, 3),
-        end=date(2023, 1, 5),
-        initial_capital=100000.0,
-        commission_rate=0.0003,
-        stamp_duty_rate=0.001,
-        min_commission=5.0,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 3), end=date(2023, 1, 5), initial_capital=100000.0, commission_rate=0.0003, stamp_duty_rate=0.001, min_commission=5.0, show_progress=False)
 
     engine = Engine(strategy, data_source, config)
     result = engine.run()
@@ -141,13 +89,7 @@ def test_engine_with_slippage():
     data_source = MockDataSource()
     strategy = BuyAndHoldStrategy("000001.SZ", data_source)
 
-    config = BacktestConfig(
-        start=date(2023, 1, 3),
-        end=date(2023, 1, 5),
-        initial_capital=100000.0,
-        slippage_rate=0.001,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 3), end=date(2023, 1, 5), initial_capital=100000.0, slippage_rate=0.001, show_progress=False)
 
     engine = Engine(strategy, data_source, config)
     result = engine.run()
@@ -181,12 +123,7 @@ def test_engine_multiple_rebalance():
     data_source = MockDataSource()
     strategy = RebalanceStrategy(data_source)
 
-    config = BacktestConfig(
-        start=date(2023, 1, 3),
-        end=date(2023, 1, 5),
-        initial_capital=100000.0,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 3), end=date(2023, 1, 5), initial_capital=100000.0, show_progress=False)
 
     engine = Engine(strategy, data_source, config)
     result = engine.run()
@@ -211,12 +148,7 @@ def test_engine_empty_signals():
     data_source = MockDataSource()
     strategy = EmptyStrategy(data_source)
 
-    config = BacktestConfig(
-        start=date(2023, 1, 3),
-        end=date(2023, 1, 5),
-        initial_capital=100000.0,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 3), end=date(2023, 1, 5), initial_capital=100000.0, show_progress=False)
 
     engine = Engine(strategy, data_source, config)
     result = engine.run()
@@ -246,12 +178,7 @@ def test_engine_warmup_period():
     data_source = MockDataSource()
     strategy = WarmupStrategy(data_source)
 
-    config = BacktestConfig(
-        start=date(2023, 1, 3),
-        end=date(2023, 1, 5),
-        initial_capital=100000.0,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 3), end=date(2023, 1, 5), initial_capital=100000.0, show_progress=False)
 
     engine = Engine(strategy, data_source, config)
     result = engine.run()
@@ -265,12 +192,7 @@ def test_engine_compute_metrics():
     data_source = MockDataSource()
     strategy = BuyAndHoldStrategy("000001.SZ", data_source)
 
-    config = BacktestConfig(
-        start=date(2023, 1, 3),
-        end=date(2023, 1, 5),
-        initial_capital=100000.0,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 3), end=date(2023, 1, 5), initial_capital=100000.0, show_progress=False)
 
     engine = Engine(strategy, data_source, config)
     result = engine.run()
@@ -287,11 +209,7 @@ def test_engine_compute_metrics():
 
 def test_backtest_config_defaults():
     """测试配置默认值"""
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 12, 31),
-        initial_capital=100000.0,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 12, 31), initial_capital=100000.0)
 
     assert config.commission_rate == 0.0003
     assert config.stamp_duty_rate == 0.001
@@ -302,16 +220,7 @@ def test_backtest_config_defaults():
 
 def test_backtest_config_custom():
     """测试自定义配置"""
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 12, 31),
-        initial_capital=100000.0,
-        commission_rate=0.0005,
-        stamp_duty_rate=0.002,
-        min_commission=10.0,
-        slippage_rate=0.001,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 12, 31), initial_capital=100000.0, commission_rate=0.0005, stamp_duty_rate=0.002, min_commission=10.0, slippage_rate=0.001, show_progress=False)
 
     assert config.commission_rate == 0.0005
     assert config.stamp_duty_rate == 0.002

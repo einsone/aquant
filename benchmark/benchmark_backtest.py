@@ -93,12 +93,7 @@ def benchmark_scenario(name: str, strategy_cls, symbols: list[str], days: int):
     calendar = data_source.calendar
     end_date = calendar[-1]
 
-    config = BacktestConfig(
-        start=start_date,
-        end=end_date,
-        initial_capital=1_000_000,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=start_date, end=end_date, initial_capital=1_000_000, show_progress=False)
 
     # 运行回测并计时
     engine = Engine(strategy=strategy, data_source=data_source, config=config)

@@ -2,8 +2,6 @@
 
 from datetime import date, timedelta
 
-import pytest
-
 from aquant.core.engine import BacktestConfig
 from aquant.data.source import DataSource
 from aquant.market.bar import DayBar
@@ -30,18 +28,7 @@ class MockDataSource(DataSource):
 
         for symbol in symbols:
             price = 10.0 + idx * 0.1
-            bars[symbol] = DayBar(
-                symbol=symbol,
-                date=dt,
-                open=price * 0.99,
-                high=price * 1.02,
-                low=price * 0.98,
-                close=price,
-                volume=1000000,
-                up_limit=price * 1.1,
-                down_limit=price * 0.9,
-                is_halted=False,
-            )
+            bars[symbol] = DayBar(symbol=symbol, date=dt, open=price * 0.99, high=price * 1.02, low=price * 0.98, close=price, volume=1000000, up_limit=price * 1.1, down_limit=price * 0.9, is_halted=False)
 
         return bars
 
@@ -83,28 +70,11 @@ def test_individual_creation():
 def test_genetic_algorithm_init():
     """测试遗传算法初始化"""
     data_source = MockDataSource()
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 1, 31),
-        initial_capital=100000,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 1, 31), initial_capital=100000, show_progress=False)
 
-    param_ranges = {
-        "param1": (5, 20, int),
-        "param2": (0.1, 1.0, float),
-    }
+    param_ranges = {"param1": (5, 20, int), "param2": (0.1, 1.0, float)}
 
-    ga = GeneticAlgorithm(
-        strategy_class=SimpleStrategy,
-        param_ranges=param_ranges,
-        data_source=data_source,
-        backtest_config=config,
-        population_size=10,
-        generations=5,
-        mutation_rate=0.1,
-        crossover_rate=0.7,
-    )
+    ga = GeneticAlgorithm(strategy_class=SimpleStrategy, param_ranges=param_ranges, data_source=data_source, backtest_config=config, population_size=10, generations=5, mutation_rate=0.1, crossover_rate=0.7)
 
     assert ga.population_size == 10
     assert ga.generations == 5
@@ -116,25 +86,11 @@ def test_genetic_algorithm_init():
 def test_initialize_population():
     """测试种群初始化"""
     data_source = MockDataSource()
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 1, 31),
-        initial_capital=100000,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 1, 31), initial_capital=100000, show_progress=False)
 
-    param_ranges = {
-        "param1": (5, 20, int),
-        "param2": (0.1, 1.0, float),
-    }
+    param_ranges = {"param1": (5, 20, int), "param2": (0.1, 1.0, float)}
 
-    ga = GeneticAlgorithm(
-        strategy_class=SimpleStrategy,
-        param_ranges=param_ranges,
-        data_source=data_source,
-        backtest_config=config,
-        population_size=10,
-    )
+    ga = GeneticAlgorithm(strategy_class=SimpleStrategy, param_ranges=param_ranges, data_source=data_source, backtest_config=config, population_size=10)
 
     ga._initialize_population()
 
@@ -149,17 +105,9 @@ def test_initialize_population():
 def test_crossover():
     """测试交叉操作"""
     data_source = MockDataSource()
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 1, 31),
-        initial_capital=100000,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 1, 31), initial_capital=100000, show_progress=False)
 
-    param_ranges = {
-        "param1": (5, 20, int),
-        "param2": (0.1, 1.0, float),
-    }
+    param_ranges = {"param1": (5, 20, int), "param2": (0.1, 1.0, float)}
 
     ga = GeneticAlgorithm(
         strategy_class=SimpleStrategy,
@@ -169,10 +117,7 @@ def test_crossover():
         crossover_rate=1.0,  # 100% 交叉
     )
 
-    parents = [
-        Individual({"param1": 10, "param2": 0.5}),
-        Individual({"param1": 15, "param2": 0.8}),
-    ]
+    parents = [Individual({"param1": 10, "param2": 0.5}), Individual({"param1": 15, "param2": 0.8})]
 
     offspring = ga._crossover(parents)
 
@@ -184,17 +129,9 @@ def test_crossover():
 def test_mutation():
     """测试变异操作"""
     data_source = MockDataSource()
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 1, 31),
-        initial_capital=100000,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 1, 31), initial_capital=100000, show_progress=False)
 
-    param_ranges = {
-        "param1": (5, 20, int),
-        "param2": (0.1, 1.0, float),
-    }
+    param_ranges = {"param1": (5, 20, int), "param2": (0.1, 1.0, float)}
 
     ga = GeneticAlgorithm(
         strategy_class=SimpleStrategy,
@@ -216,25 +153,11 @@ def test_mutation():
 def test_selection():
     """测试选择操作"""
     data_source = MockDataSource()
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 1, 31),
-        initial_capital=100000,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 1, 31), initial_capital=100000, show_progress=False)
 
-    param_ranges = {
-        "param1": (5, 20, int),
-        "param2": (0.1, 1.0, float),
-    }
+    param_ranges = {"param1": (5, 20, int), "param2": (0.1, 1.0, float)}
 
-    ga = GeneticAlgorithm(
-        strategy_class=SimpleStrategy,
-        param_ranges=param_ranges,
-        data_source=data_source,
-        backtest_config=config,
-        population_size=10,
-    )
+    ga = GeneticAlgorithm(strategy_class=SimpleStrategy, param_ranges=param_ranges, data_source=data_source, backtest_config=config, population_size=10)
 
     # 创建有不同适应度的种群
     ga.population = [Individual({"param1": i, "param2": 0.5}) for i in range(5, 15)]
@@ -249,25 +172,11 @@ def test_selection():
 def test_replacement():
     """测试精英保留替换"""
     data_source = MockDataSource()
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 1, 31),
-        initial_capital=100000,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 1, 31), initial_capital=100000, show_progress=False)
 
-    param_ranges = {
-        "param1": (5, 20, int),
-        "param2": (0.1, 1.0, float),
-    }
+    param_ranges = {"param1": (5, 20, int), "param2": (0.1, 1.0, float)}
 
-    ga = GeneticAlgorithm(
-        strategy_class=SimpleStrategy,
-        param_ranges=param_ranges,
-        data_source=data_source,
-        backtest_config=config,
-        population_size=10,
-    )
+    ga = GeneticAlgorithm(strategy_class=SimpleStrategy, param_ranges=param_ranges, data_source=data_source, backtest_config=config, population_size=10)
 
     # 创建种群和后代
     ga.population = [Individual({"param1": i, "param2": 0.5}) for i in range(5, 15)]
@@ -289,26 +198,11 @@ def test_replacement():
 def test_run_optimization():
     """测试完整优化流程"""
     data_source = MockDataSource()
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 1, 31),
-        initial_capital=100000,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 1, 31), initial_capital=100000, show_progress=False)
 
-    param_ranges = {
-        "param1": (5, 20, int),
-        "param2": (0.1, 1.0, float),
-    }
+    param_ranges = {"param1": (5, 20, int), "param2": (0.1, 1.0, float)}
 
-    ga = GeneticAlgorithm(
-        strategy_class=SimpleStrategy,
-        param_ranges=param_ranges,
-        data_source=data_source,
-        backtest_config=config,
-        population_size=5,
-        generations=2,
-    )
+    ga = GeneticAlgorithm(strategy_class=SimpleStrategy, param_ranges=param_ranges, data_source=data_source, backtest_config=config, population_size=5, generations=2)
 
     best_params = ga.run(verbose=False)
 

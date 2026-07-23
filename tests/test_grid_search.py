@@ -2,8 +2,6 @@
 
 from datetime import date, timedelta
 
-import pytest
-
 from aquant.core.engine import BacktestConfig
 from aquant.data.source import DataSource
 from aquant.market.bar import DayBar
@@ -30,18 +28,7 @@ class MockDataSource(DataSource):
 
         for symbol in symbols:
             price = 10.0 + idx * 0.1
-            bars[symbol] = DayBar(
-                symbol=symbol,
-                date=dt,
-                open=price * 0.99,
-                high=price * 1.02,
-                low=price * 0.98,
-                close=price,
-                volume=1000000,
-                up_limit=price * 1.1,
-                down_limit=price * 0.9,
-                is_halted=False,
-            )
+            bars[symbol] = DayBar(symbol=symbol, date=dt, open=price * 0.99, high=price * 1.02, low=price * 0.98, close=price, volume=1000000, up_limit=price * 1.1, down_limit=price * 0.9, is_halted=False)
 
         return bars
 
@@ -94,24 +81,11 @@ def test_grid_search_basic():
     """测试基本网格搜索"""
     data_source = MockDataSource()
 
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 2, 28),
-        initial_capital=100000,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 2, 28), initial_capital=100000, show_progress=False)
 
-    param_grid = {
-        "period": [10, 20],
-        "threshold": [0.01, 0.02],
-    }
+    param_grid = {"period": [10, 20], "threshold": [0.01, 0.02]}
 
-    results = grid_search(
-        strategy_cls=ParameterizedStrategy,
-        param_grid=param_grid,
-        config=config,
-        data_source=data_source,
-    )
+    results = grid_search(strategy_cls=ParameterizedStrategy, param_grid=param_grid, config=config, data_source=data_source)
 
     # 应该有 2 * 2 = 4 种组合
     assert len(results) == 4
@@ -124,19 +98,9 @@ def test_grid_search_empty_params():
     """测试空参数网格"""
     data_source = MockDataSource()
 
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 1, 31),
-        initial_capital=100000,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 1, 31), initial_capital=100000, show_progress=False)
 
-    results = grid_search(
-        strategy_cls=ParameterizedStrategy,
-        param_grid={},
-        config=config,
-        data_source=data_source,
-    )
+    results = grid_search(strategy_cls=ParameterizedStrategy, param_grid={}, config=config, data_source=data_source)
 
     assert len(results) == 0
 
@@ -145,22 +109,11 @@ def test_grid_search_single_param():
     """测试单参数优化"""
     data_source = MockDataSource()
 
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 1, 31),
-        initial_capital=100000,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 1, 31), initial_capital=100000, show_progress=False)
 
     param_grid = {"period": [5, 10, 15, 20]}
 
-    results = grid_search(
-        strategy_cls=ParameterizedStrategy,
-        param_grid=param_grid,
-        config=config,
-        data_source=data_source,
-        metric="total_return",
-    )
+    results = grid_search(strategy_cls=ParameterizedStrategy, param_grid=param_grid, config=config, data_source=data_source, metric="total_return")
 
     assert len(results) == 4
     assert "period" in results.columns
@@ -171,25 +124,11 @@ def test_grid_search_find_best():
     """测试找到最佳参数"""
     data_source = MockDataSource()
 
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 2, 28),
-        initial_capital=100000,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 2, 28), initial_capital=100000, show_progress=False)
 
-    param_grid = {
-        "period": [10, 20],
-        "threshold": [0.01, 0.02],
-    }
+    param_grid = {"period": [10, 20], "threshold": [0.01, 0.02]}
 
-    results = grid_search(
-        strategy_cls=ParameterizedStrategy,
-        param_grid=param_grid,
-        config=config,
-        data_source=data_source,
-        metric="sharpe",
-    )
+    results = grid_search(strategy_cls=ParameterizedStrategy, param_grid=param_grid, config=config, data_source=data_source, metric="sharpe")
 
     # 找出最佳参数
     best_row = results.sort("sharpe", descending=True)[0]
@@ -201,21 +140,11 @@ def test_grid_search_multiple_metrics():
     """测试多个指标同时记录"""
     data_source = MockDataSource()
 
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 1, 31),
-        initial_capital=100000,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 1, 31), initial_capital=100000, show_progress=False)
 
     param_grid = {"period": [10, 20]}
 
-    results = grid_search(
-        strategy_cls=ParameterizedStrategy,
-        param_grid=param_grid,
-        config=config,
-        data_source=data_source,
-    )
+    results = grid_search(strategy_cls=ParameterizedStrategy, param_grid=param_grid, config=config, data_source=data_source)
 
     # 所有常见指标都应该在结果中
     assert "total_return" in results.columns

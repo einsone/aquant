@@ -38,12 +38,7 @@ def run_backtest():
 
     # 配置回测
     calendar = data_source.calendar
-    config = BacktestConfig(
-        start=calendar[0],
-        end=calendar[-1],
-        initial_capital=1_000_000,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=calendar[0], end=calendar[-1], initial_capital=1_000_000, show_progress=False)
 
     # 运行回测
     engine = Engine(strategy=strategy, data_source=data_source, config=config)

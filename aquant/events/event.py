@@ -75,3 +75,51 @@ class SignalEvent(Event):
 @dataclass
 class ValuationEvent(Event):
     phase: Phase = field(default=Phase.VALUATION, init=False)
+
+
+# ---------------------------------------------------------------------------
+# 业务事件（用于消息总线）
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class OrderSubmittedEvent(Event):
+    """订单提交事件。"""
+
+    symbol: str
+    side: str  # "buy" 或 "sell"
+    shares: int
+    phase: Phase = field(default=Phase.FILL, init=False)
+
+
+@dataclass
+class OrderFilledEvent(Event):
+    """订单成交事件。"""
+
+    symbol: str
+    side: str  # "buy" 或 "sell"
+    shares: int
+    fill_price: float
+    commission: float
+    stamp_duty: float
+    phase: Phase = field(default=Phase.FILL, init=False)
+
+
+@dataclass
+class PositionChangedEvent(Event):
+    """持仓变动事件。"""
+
+    symbol: str
+    old_shares: int
+    new_shares: int
+    phase: Phase = field(default=Phase.FILL, init=False)
+
+
+@dataclass
+class PortfolioValuationEvent(Event):
+    """组合估值事件（每日收盘）。"""
+
+    total_value: float
+    cash: float
+    position_count: int
+    phase: Phase = field(default=Phase.VALUATION, init=False)

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from aquant.core.context import Context
+    from aquant.events.bus import MessageBus
     from aquant.strategy.signal import Signal
 
 
@@ -38,6 +39,23 @@ class Strategy(ABC):
         使用多进程参数优化（``n_jobs != 1``）时，每个 worker 进程都会
         独立调用此方法。因此数据库连接应在此处创建，而不是在 ``__init__``
         中，以避免 DuckDB 等单写者数据库的跨进程文件锁冲突。
+        """
+
+    def setup_subscriptions(self, bus: MessageBus) -> None:  # noqa: B027
+        """可选钩子：策略可订阅事件。
+
+        在 Engine.__init__() 后、run() 前调用。策略可通过消息总线订阅
+        订单成交、持仓变动、组合估值等事件，实现事件驱动的交易逻辑。
+
+        使用示例::
+
+            def setup_subscriptions(self, bus: MessageBus) -> None:
+                bus.subscribe("order.filled", self._on_order_filled)
+                bus.subscribe("portfolio.valuation", self._on_valuation)
+
+
+            def _on_order_filled(self, event: OrderFilledEvent) -> None:
+                logger.info("订单成交", symbol=event.symbol, price=event.fill_price)
         """
 
     @abstractmethod

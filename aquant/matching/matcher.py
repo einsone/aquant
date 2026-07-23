@@ -7,6 +7,7 @@ from aquant.log import get_logger
 from aquant.matching.cost import CostModel
 from aquant.matching.guards import AvailableSharesGuard, CashGuard, Guard, HaltGuard, LimitGuard, T1Guard, VolumeCapGuard
 from aquant.matching.order import Order
+from aquant.matching.rules import StockRules, TradingRules
 from aquant.strategy.signal import Signal
 
 
@@ -16,15 +17,28 @@ logger = get_logger(__name__)
 if TYPE_CHECKING:
     from datetime import date
 
+    from aquant.events.bus import MessageBus
     from aquant.market.bar import DayBar
     from aquant.portfolio.portfolio import Portfolio
 
 
 class Matcher:
-    def __init__(self, cost_model: CostModel, rebalance_threshold: float = 0.0, volume_cap_ratio: float = 1.0) -> None:
+    def __init__(self, cost_model: CostModel, rebalance_threshold: float = 0.0, volume_cap_ratio: float = 1.0, guards: list[Guard] | None = None, bus: MessageBus | None = None, trading_rules: TradingRules | None = None) -> None:
         self.cost_model = cost_model
         self.rebalance_threshold = rebalance_threshold
-        self._guards: list[Guard] = [HaltGuard(), LimitGuard(), T1Guard(), AvailableSharesGuard(), CashGuard(cost_model.commission_rate, cost_model.min_commission, cost_model.slippage_rate), VolumeCapGuard(volume_cap_ratio)]
+        self._bus = bus  # 可选的消息总线，用于发布成交事件
+
+        # 新增：交易规则（默认使用 A 股规则，向后兼容）
+        if trading_rules is None:
+            self._trading_rules = StockRules(commission_rate=cost_model.commission_rate, min_commission=cost_model.min_commission, stamp_duty_rate=cost_model.stamp_duty_rate, slippage_rate=cost_model.slippage_rate)
+        else:
+            self._trading_rules = trading_rules
+
+        # 如果未提供 guards，使用默认配置
+        if guards is None:
+            self._guards: list[Guard] = [HaltGuard(), LimitGuard(), T1Guard(), AvailableSharesGuard(), CashGuard(cost_model.commission_rate, cost_model.min_commission, cost_model.slippage_rate), VolumeCapGuard(volume_cap_ratio)]
+        else:
+            self._guards = guards
 
     def execute(self, signals: list[Signal], portfolio: Portfolio, bars: dict[str, DayBar], dt: date, rebalance_mode: str = "incremental") -> None:
         """执行信号列表，结算所有委托。
@@ -144,3 +158,9 @@ class Matcher:
             commission, stamp_duty = self.cost_model.compute_sell(value)
 
         portfolio.apply_fill(symbol=order.symbol, side=order.side, shares=order.shares, fill_price=fill_price, commission=commission, stamp_duty=stamp_duty, locked=order.locked, dt=dt)
+
+        # 发布订单成交事件（如果消息总线可用）
+        if self._bus is not None:
+            from aquant.events.event import OrderFilledEvent
+
+            self._bus.publish("order.filled", OrderFilledEvent(date=dt, symbol=order.symbol, side=order.side, shares=order.shares, fill_price=fill_price, commission=commission, stamp_duty=stamp_duty))

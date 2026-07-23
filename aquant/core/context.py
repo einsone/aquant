@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from datetime import date
 
     from aquant.portfolio.position import PositionView
+    from aquant.portfolio.query import PortfolioQueryService
 
 
 @dataclass(frozen=True)
@@ -22,9 +23,23 @@ class Context:
         cash: 当前可用现金。
         total_value: cash 加所有持仓以 last_close 估算的市值之和。
             基于前一日收盘价估值——框架在信号生成前不以当日开盘价重新估值。
+        query: 组合查询服务，提供历史数据查询接口。
+            策略可通过此接口访问历史净值曲线、成交记录、持仓历史等。
+
+            使用示例::
+
+                # 查询最近 20 日净值曲线
+                nav_df = context.query.get_nav_curve(start=context.current_date - timedelta(days=30), end=context.current_date)
+
+                # 查询当前回撤
+                current_dd = context.query.get_current_drawdown()
+
+                # 查询某标的的胜率
+                win_rate = context.query.get_win_rate("000001.SZ")
     """
 
     current_date: date
     positions: dict[str, PositionView]
     cash: float
     total_value: float
+    query: PortfolioQueryService

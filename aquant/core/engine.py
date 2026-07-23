@@ -8,7 +8,8 @@ from pydantic import BaseModel, Field, field_validator
 from aquant.adjustment.adjuster import Adjuster
 from aquant.core.context import Context
 from aquant.data.source import DataSource
-from aquant.events.event import AdjustmentEvent, DayStartEvent, DelistEvent, FillEvent, Phase, SignalEvent, ValuationEvent
+from aquant.events.bus import MessageBus
+from aquant.events.event import AdjustmentEvent, DayStartEvent, DelistEvent, FillEvent, Phase, PortfolioValuationEvent, SignalEvent, ValuationEvent
 from aquant.events.queue import EventQueue
 from aquant.log import get_logger
 from aquant.matching.cost import CostModel
@@ -24,6 +25,7 @@ if TYPE_CHECKING:
     import polars as pl
 
     from aquant.market.bar import DayBar
+    from aquant.risk import RiskManager
     from aquant.strategy.base import Strategy
 
 
@@ -95,7 +97,7 @@ class BacktestResult:
 
 
 class Engine:
-    def __init__(self, strategy: Strategy, data_source: DataSource, config: BacktestConfig) -> None:
+    def __init__(self, strategy: Strategy, data_source: DataSource, config: BacktestConfig, risk_manager: RiskManager | None = None) -> None:
         self._strategy = strategy
         self._data_source = data_source
         self._config = config
@@ -107,7 +109,20 @@ class Engine:
         self._adjuster = Adjuster()
         self._portfolio = Portfolio(config.initial_capital)
         self._cost_model = CostModel.from_config(config)
-        self._matcher = Matcher(cost_model=self._cost_model, rebalance_threshold=config.rebalance_threshold, volume_cap_ratio=config.volume_cap_ratio)
+
+        # 新增：消息总线
+        self._bus = MessageBus()
+
+        # 将消息总线传递给 Matcher
+        self._matcher = Matcher(cost_model=self._cost_model, rebalance_threshold=config.rebalance_threshold, volume_cap_ratio=config.volume_cap_ratio, bus=self._bus)
+
+        # 新增：风控管理器（可选）
+        from aquant.risk import RiskManager as RM
+
+        self._risk_manager = risk_manager if risk_manager is not None else RM()
+
+        # 让策略订阅事件（策略基类已定义 setup_subscriptions 方法，默认为空实现）
+        strategy.setup_subscriptions(self._bus)
 
         self._trading_days = trading_days
         logger.info("回测初始化完成", start=str(trading_days[0]), end=str(trading_days[-1]), trading_days=len(trading_days), initial_capital=config.initial_capital)
@@ -144,7 +159,13 @@ class Engine:
         # last_close 在 VALUATION 阶段才更新，FILL 后仍是昨收价，时间基准一致。
         positions = self._portfolio.position_views()
         total_value = self._portfolio.cash + sum(p.shares * p.last_close for p in positions.values())
-        return Context(current_date=dt, positions=positions, cash=self._portfolio.cash, total_value=total_value)
+
+        # 新增：创建查询服务
+        from aquant.portfolio.query import PortfolioQueryService
+
+        query_service = PortfolioQueryService(daily_nav=self._portfolio._daily_nav, trade_log=self._portfolio.trade_log)
+
+        return Context(current_date=dt, positions=positions, cash=self._portfolio.cash, total_value=total_value, query=query_service)
 
     def run(self) -> BacktestResult:
         total_days = len(self._trading_days)
@@ -194,9 +215,13 @@ class Engine:
                 # 应缓存信号；_warmup_remaining > 0 表示数据仍不足，丢弃。
                 if not self._day_is_warmup or self._warmup_remaining == 0:
                     raw_signals = self._strategy.on_bar(context)
+
+                    # 新增：风控过滤
+                    filtered_signals = self._risk_manager.check_signals(raw_signals, self._portfolio, context)
+
                     # 复制 Signal 对象再填入 signal_date，避免改变策略持有的引用
                     # meta 做浅拷贝，防止策略后续修改 meta dict 影响缓存的信号
-                    self._pending_signals = [Signal(symbol=s.symbol, weight=s.weight, signal_date=event.date, meta=dict(s.meta)) for s in raw_signals]
+                    self._pending_signals = [Signal(symbol=s.symbol, weight=s.weight, signal_date=event.date, meta=dict(s.meta)) for s in filtered_signals]
                 else:
                     self._strategy.on_bar(context)
 
@@ -206,6 +231,9 @@ class Engine:
                     if not self._day_bars and self._portfolio.symbols:
                         self._day_bars = self._data_source.load_bars(event.date, self._portfolio.symbols)
                     self._portfolio.take_snapshot(event.date, self._day_bars)
+
+                    # 发布组合估值事件
+                    self._bus.publish("portfolio.valuation", PortfolioValuationEvent(date=event.date, total_value=self._portfolio.total_value, cash=self._portfolio.cash, position_count=len(self._portfolio.positions)))
                 self._day_bars = {}  # 无论是否预热，每日清空，防止 stale bars 泄漏到次日
 
         end_context = self._build_context(self._trading_days[-1])

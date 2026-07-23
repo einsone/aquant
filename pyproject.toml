@@ -7,8 +7,19 @@
     version         = "0.1.0"
 
 [dependency-groups]
-    dev = ["ruff>=0.15.16", "ty>=0.0.48"]
+    dev = ["pytest>=9.1.1", "ruff>=0.15.16", "ty>=0.0.48"]
 
 [build-system]
     build-backend = "hatchling.build"
     requires      = ["hatchling"]
+
+[tool.pytest.ini_options]
+    addopts          = ["--strict-markers", "--tb=short", "-v"]
+    python_classes   = ["Test*"]
+    python_files     = ["test_*.py"]
+    python_functions = ["test_*"]
+    testpaths        = ["tests"]
+
+[[tool.ty.overrides]]
+    include = ["aquant/data/alds.py"]
+    rules   = { unresolved-import = "ignore" }

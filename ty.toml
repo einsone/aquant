@@ -15,3 +15,7 @@
     respect-type-ignore-comments = true # 是否尊重 `# type: ignore` 注释
 
 [rules]
+
+[[overrides]]
+    include = ["aquant/data/alds.py"]
+    rules   = { unresolved-import = "ignore" }

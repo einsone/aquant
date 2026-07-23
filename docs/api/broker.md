@@ -66,13 +66,13 @@ from aquant.broker.adapter import BrokerAdapter, Order, OrderSide, OrderType
 
 class MyBrokerAdapter(BrokerAdapter):
     """自定义券商适配器"""
-    
-    def submit_order(self, symbol: str, side: OrderSide, quantity: int, 
+
+    def submit_order(self, symbol: str, side: OrderSide, quantity: int,
                      price: float | None, order_type: OrderType) -> Order:
         """提交订单"""
         # 调用真实券商 API
         order_id = broker_api.submit(...)
-        
+
         return Order(
             order_id=order_id,
             symbol=symbol,
@@ -85,13 +85,13 @@ class MyBrokerAdapter(BrokerAdapter):
             avg_filled_price=0.0,
             timestamp=datetime.now(),
         )
-    
+
     def get_positions(self) -> dict[str, Position]:
         """查询持仓"""
         # 调用真实券商 API
         positions = broker_api.get_positions()
         return positions
-    
+
     # 实现其他抽象方法...
 ```
 

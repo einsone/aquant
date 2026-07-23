@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import pytest
 from datetime import date
 
 from aquant.market.bar import AssetType, DayBar
@@ -19,72 +18,25 @@ class TestAssetType:
 
     def test_default_asset_type(self):
         """测试默认资产类型为 STOCK。"""
-        bar = DayBar(
-            symbol="000001.SZ",
-            date=date(2023, 1, 1),
-            open=10.0,
-            close=10.5,
-            high=11.0,
-            low=9.5,
-            volume=1000000.0,
-            up_limit=11.0,
-            down_limit=9.0,
-            is_halted=False,
-        )
+        bar = DayBar(symbol="000001.SZ", date=date(2023, 1, 1), open=10.0, close=10.5, high=11.0, low=9.5, volume=1000000.0, up_limit=11.0, down_limit=9.0, is_halted=False)
 
         assert bar.asset_type == AssetType.STOCK
 
     def test_explicit_stock_type(self):
         """测试显式指定股票类型。"""
-        bar = DayBar(
-            symbol="000001.SZ",
-            date=date(2023, 1, 1),
-            open=10.0,
-            close=10.5,
-            high=11.0,
-            low=9.5,
-            volume=1000000.0,
-            up_limit=11.0,
-            down_limit=9.0,
-            is_halted=False,
-            asset_type=AssetType.STOCK,
-        )
+        bar = DayBar(symbol="000001.SZ", date=date(2023, 1, 1), open=10.0, close=10.5, high=11.0, low=9.5, volume=1000000.0, up_limit=11.0, down_limit=9.0, is_halted=False, asset_type=AssetType.STOCK)
 
         assert bar.asset_type == AssetType.STOCK
 
     def test_future_type(self):
         """测试期货类型。"""
-        bar = DayBar(
-            symbol="IF2312",
-            date=date(2023, 12, 15),
-            open=3800.0,
-            close=3850.0,
-            high=3900.0,
-            low=3750.0,
-            volume=100000.0,
-            up_limit=4000.0,
-            down_limit=3600.0,
-            is_halted=False,
-            asset_type=AssetType.FUTURE,
-        )
+        bar = DayBar(symbol="IF2312", date=date(2023, 12, 15), open=3800.0, close=3850.0, high=3900.0, low=3750.0, volume=100000.0, up_limit=4000.0, down_limit=3600.0, is_halted=False, asset_type=AssetType.FUTURE)
 
         assert bar.asset_type == AssetType.FUTURE
 
     def test_option_type(self):
         """测试期权类型。"""
-        bar = DayBar(
-            symbol="10004000",
-            date=date(2023, 1, 1),
-            open=0.5,
-            close=0.55,
-            high=0.6,
-            low=0.45,
-            volume=50000.0,
-            up_limit=0.7,
-            down_limit=0.3,
-            is_halted=False,
-            asset_type=AssetType.OPTION,
-        )
+        bar = DayBar(symbol="10004000", date=date(2023, 1, 1), open=0.5, close=0.55, high=0.6, low=0.45, volume=50000.0, up_limit=0.7, down_limit=0.3, is_halted=False, asset_type=AssetType.OPTION)
 
         assert bar.asset_type == AssetType.OPTION
 
@@ -96,32 +48,9 @@ class TestAssetType:
 
     def test_asset_type_comparison(self):
         """测试资产类型比较。"""
-        bar1 = DayBar(
-            symbol="000001.SZ",
-            date=date(2023, 1, 1),
-            open=10.0,
-            close=10.5,
-            high=11.0,
-            low=9.5,
-            volume=1000000.0,
-            up_limit=11.0,
-            down_limit=9.0,
-            is_halted=False,
-        )
+        bar1 = DayBar(symbol="000001.SZ", date=date(2023, 1, 1), open=10.0, close=10.5, high=11.0, low=9.5, volume=1000000.0, up_limit=11.0, down_limit=9.0, is_halted=False)
 
-        bar2 = DayBar(
-            symbol="IF2312",
-            date=date(2023, 12, 15),
-            open=3800.0,
-            close=3850.0,
-            high=3900.0,
-            low=3750.0,
-            volume=100000.0,
-            up_limit=4000.0,
-            down_limit=3600.0,
-            is_halted=False,
-            asset_type=AssetType.FUTURE,
-        )
+        bar2 = DayBar(symbol="IF2312", date=date(2023, 12, 15), open=3800.0, close=3850.0, high=3900.0, low=3750.0, volume=100000.0, up_limit=4000.0, down_limit=3600.0, is_halted=False, asset_type=AssetType.FUTURE)
 
         assert bar1.asset_type == AssetType.STOCK
         assert bar2.asset_type == AssetType.FUTURE
@@ -129,18 +58,7 @@ class TestAssetType:
 
     def test_daybar_immutable(self):
         """测试 DayBar 不可变性。"""
-        bar = DayBar(
-            symbol="000001.SZ",
-            date=date(2023, 1, 1),
-            open=10.0,
-            close=10.5,
-            high=11.0,
-            low=9.5,
-            volume=1000000.0,
-            up_limit=11.0,
-            down_limit=9.0,
-            is_halted=False,
-        )
+        bar = DayBar(symbol="000001.SZ", date=date(2023, 1, 1), open=10.0, close=10.5, high=11.0, low=9.5, volume=1000000.0, up_limit=11.0, down_limit=9.0, is_halted=False)
 
         # DayBar 是 frozen dataclass，验证不可变性
         assert bar.asset_type == AssetType.STOCK

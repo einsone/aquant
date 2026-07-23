@@ -5,11 +5,5 @@
 
 from aquant.broker.adapter import BrokerAdapter, Order, OrderSide, OrderStatus, OrderType, Position
 
-__all__ = [
-    "BrokerAdapter",
-    "Order",
-    "OrderSide",
-    "OrderStatus",
-    "OrderType",
-    "Position",
-]
+
+__all__ = ["BrokerAdapter", "Order", "OrderSide", "OrderStatus", "OrderType", "Position"]

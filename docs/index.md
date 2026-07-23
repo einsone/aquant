@@ -35,10 +35,10 @@ from aquant.data.bigquant import BigQuantDataSource
 
 class MyStrategy(Strategy):
     """简单双均线策略"""
-    
+
     warmup_period = 20
     rebalance_mode = "replace"
-    
+
     def on_bar(self, context):
         # 策略逻辑
         signals = []

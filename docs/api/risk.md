@@ -57,10 +57,10 @@ from aquant.risk import RiskRule
 
 class MyRiskRule(RiskRule):
     """自定义风控规则"""
-    
+
     def __init__(self, threshold: float):
         self.threshold = threshold
-    
+
     def check(self, signal, portfolio, context) -> bool:
         """检查信号是否通过风控"""
         # 自定义检查逻辑

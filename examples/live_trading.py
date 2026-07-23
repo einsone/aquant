@@ -44,13 +44,7 @@ def main():
     target_value = broker.get_total_value() * 0.3
     quantity = int(target_value / current_price)
 
-    order = broker.submit_order(
-        symbol="AAPL",
-        side=OrderSide.BUY,
-        quantity=quantity,
-        price=current_price,
-        order_type=OrderType.LIMIT,
-    )
+    order = broker.submit_order(symbol="AAPL", side=OrderSide.BUY, quantity=quantity, price=current_price, order_type=OrderType.LIMIT)
 
     print(f"提交订单: {order.order_id}")
     print(f"  标的: {order.symbol}")
@@ -64,7 +58,7 @@ def main():
     positions = broker.get_positions()
     if "AAPL" in positions:
         pos = positions["AAPL"]
-        print(f"持仓信息:")
+        print("持仓信息:")
         print(f"  标的: {pos.symbol}")
         print(f"  数量: {pos.quantity}")
         print(f"  可用: {pos.available_quantity}")
@@ -103,13 +97,7 @@ def main():
     print("场景 3: 卖出 AAPL")
     print("-" * 60)
 
-    order = broker.submit_order(
-        symbol="AAPL",
-        side=OrderSide.SELL,
-        quantity=quantity,
-        price=new_price,
-        order_type=OrderType.LIMIT,
-    )
+    order = broker.submit_order(symbol="AAPL", side=OrderSide.SELL, quantity=quantity, price=new_price, order_type=OrderType.LIMIT)
 
     print(f"提交订单: {order.order_id}")
     print(f"  标的: {order.symbol}")

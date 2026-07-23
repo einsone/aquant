@@ -1,13 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING
 
 from aquant.broker.adapter import BrokerAdapter, Order, OrderSide, OrderStatus, OrderType, Position
-
-
-if TYPE_CHECKING:
-    pass
 
 
 class SimulatedBroker(BrokerAdapter):
@@ -52,14 +47,7 @@ class SimulatedBroker(BrokerAdapter):
         self._orders: dict[str, Order] = {}
         self._order_counter = 0
 
-    def submit_order(
-        self,
-        symbol: str,
-        side: OrderSide,
-        quantity: int,
-        price: float | None = None,
-        order_type: OrderType = OrderType.MARKET,
-    ) -> Order:
+    def submit_order(self, symbol: str, side: OrderSide, quantity: int, price: float | None = None, order_type: OrderType = OrderType.MARKET) -> Order:
         """提交订单（模拟立即成交）。
 
         参数：
@@ -85,19 +73,7 @@ class SimulatedBroker(BrokerAdapter):
         now = datetime.now()
 
         # 创建订单
-        order = Order(
-            order_id=order_id,
-            symbol=symbol,
-            side=side,
-            order_type=order_type,
-            quantity=quantity,
-            price=price,
-            status=OrderStatus.SUBMITTED,
-            filled_quantity=0,
-            avg_filled_price=0.0,
-            submit_time=now,
-            update_time=now,
-        )
+        order = Order(order_id=order_id, symbol=symbol, side=side, order_type=order_type, quantity=quantity, price=price, status=OrderStatus.SUBMITTED, filled_quantity=0, avg_filled_price=0.0, submit_time=now, update_time=now)
 
         # 模拟立即成交
         if side == OrderSide.BUY:
@@ -147,14 +123,7 @@ class SimulatedBroker(BrokerAdapter):
             if new_quantity == 0:
                 del self._positions[symbol]
             else:
-                self._positions[symbol] = Position(
-                    symbol=symbol,
-                    quantity=new_quantity,
-                    available_quantity=pos.available_quantity - quantity,
-                    avg_cost=pos.avg_cost,
-                    market_value=new_quantity * price,
-                    unrealized_pnl=new_quantity * (price - pos.avg_cost),
-                )
+                self._positions[symbol] = Position(symbol=symbol, quantity=new_quantity, available_quantity=pos.available_quantity - quantity, avg_cost=pos.avg_cost, market_value=new_quantity * price, unrealized_pnl=new_quantity * (price - pos.avg_cost))
 
         # 标记为完全成交
         order.status = OrderStatus.FILLED
@@ -234,14 +203,7 @@ class SimulatedBroker(BrokerAdapter):
                 pos = self._positions[symbol]
                 new_market_value = pos.quantity * price
                 new_unrealized_pnl = pos.quantity * (price - pos.avg_cost)
-                self._positions[symbol] = Position(
-                    symbol=symbol,
-                    quantity=pos.quantity,
-                    available_quantity=pos.available_quantity,
-                    avg_cost=pos.avg_cost,
-                    market_value=new_market_value,
-                    unrealized_pnl=new_unrealized_pnl,
-                )
+                self._positions[symbol] = Position(symbol=symbol, quantity=pos.quantity, available_quantity=pos.available_quantity, avg_cost=pos.avg_cost, market_value=new_market_value, unrealized_pnl=new_unrealized_pnl)
 
     def set_available_quantity(self, symbol: str, available: int) -> None:
         """设置可用数量（用于模拟 T+1 解锁）。
@@ -252,11 +214,4 @@ class SimulatedBroker(BrokerAdapter):
         """
         if symbol in self._positions:
             pos = self._positions[symbol]
-            self._positions[symbol] = Position(
-                symbol=symbol,
-                quantity=pos.quantity,
-                available_quantity=available,
-                avg_cost=pos.avg_cost,
-                market_value=pos.market_value,
-                unrealized_pnl=pos.unrealized_pnl,
-            )
+            self._positions[symbol] = Position(symbol=symbol, quantity=pos.quantity, available_quantity=available, avg_cost=pos.avg_cost, market_value=pos.market_value, unrealized_pnl=pos.unrealized_pnl)

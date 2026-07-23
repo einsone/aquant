@@ -35,23 +35,23 @@ from aquant import Strategy, Signal
 
 class MyStrategy(Strategy):
     """自定义策略示例"""
-    
+
     warmup_period = 20  # 预热期天数
     rebalance_mode = "replace"  # 调仓模式
-    
+
     def on_start(self, context):
         """回测开始前调用"""
         self.ma_period = 20
-        
+
     def on_bar(self, context):
         """每个交易日调用，返回信号列表"""
         signals = []
-        
+
         # 策略逻辑
         # ...
-        
+
         return signals
-    
+
     def on_end(self, context):
         """回测结束后调用"""
         pass

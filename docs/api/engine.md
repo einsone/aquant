@@ -9,7 +9,7 @@
       show_root_heading: true
       show_source: true
       members:
-        - __init__
+        - "**init**"
         - run
 
 ## BacktestConfig

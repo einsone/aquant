@@ -33,13 +33,7 @@ class TestSimulatedBroker:
         """测试买入成功。"""
         broker = SimulatedBroker(initial_cash=100000.0)
 
-        order = broker.submit_order(
-            symbol="AAPL",
-            side=OrderSide.BUY,
-            quantity=100,
-            price=150.0,
-            order_type=OrderType.LIMIT,
-        )
+        order = broker.submit_order(symbol="AAPL", side=OrderSide.BUY, quantity=100, price=150.0, order_type=OrderType.LIMIT)
 
         # 验证订单状态
         assert order.status == OrderStatus.FILLED
@@ -63,13 +57,7 @@ class TestSimulatedBroker:
         """测试资金不足拒单。"""
         broker = SimulatedBroker(initial_cash=10000.0)
 
-        order = broker.submit_order(
-            symbol="AAPL",
-            side=OrderSide.BUY,
-            quantity=100,
-            price=150.0,
-            order_type=OrderType.LIMIT,
-        )
+        order = broker.submit_order(symbol="AAPL", side=OrderSide.BUY, quantity=100, price=150.0, order_type=OrderType.LIMIT)
 
         # 验证订单被拒绝
         assert order.status == OrderStatus.REJECTED

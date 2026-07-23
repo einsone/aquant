@@ -4,11 +4,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING
-
-
-if TYPE_CHECKING:
-    pass
 
 
 class OrderSide(str, Enum):
@@ -126,14 +121,7 @@ class BrokerAdapter(ABC):
     """
 
     @abstractmethod
-    def submit_order(
-        self,
-        symbol: str,
-        side: OrderSide,
-        quantity: int,
-        price: float | None = None,
-        order_type: OrderType = OrderType.MARKET,
-    ) -> Order:
+    def submit_order(self, symbol: str, side: OrderSide, quantity: int, price: float | None = None, order_type: OrderType = OrderType.MARKET) -> Order:
         """提交订单。
 
         参数：

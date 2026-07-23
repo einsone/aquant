@@ -28,13 +28,7 @@ class ContextPool:
         pool = ContextPool(max_size=10)
 
         # 获取 Context 对象
-        ctx = pool.get(
-            current_date=date.today(),
-            positions=positions_dict,
-            cash=100000.0,
-            total_value=150000.0,
-            query=query_service
-        )
+        ctx = pool.get(current_date=date.today(), positions=positions_dict, cash=100000.0, total_value=150000.0, query=query_service)
 
         # 使用完毕后归还（目前自动回收，无需显式调用）
 
@@ -52,14 +46,7 @@ class ContextPool:
         self._pool: list[dict[str, PositionView]] = []
         self._max_size = max_size
 
-    def get(
-        self,
-        current_date: date,
-        positions: dict[str, PositionView],
-        cash: float,
-        total_value: float,
-        query: PortfolioQueryService,
-    ) -> Context:
+    def get(self, current_date: date, positions: dict[str, PositionView], cash: float, total_value: float, query: PortfolioQueryService) -> Context:
         """从池中获取一个 Context 对象。
 
         会尝试从池中复用字典对象以减少内存分配。
@@ -86,13 +73,7 @@ class ContextPool:
 
         # Context 是 frozen dataclass，每次都要创建新对象
         # 但复用了字典可以减少一些内存分配开销
-        ctx = Context(
-            current_date=current_date,
-            positions=positions_dict,
-            cash=cash,
-            total_value=total_value,
-            query=query,
-        )
+        ctx = Context(current_date=current_date, positions=positions_dict, cash=cash, total_value=total_value, query=query)
 
         # 回测结束后字典会被回收到池中（由 Engine 管理）
         return ctx

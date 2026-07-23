@@ -12,37 +12,37 @@ from aquant.data.bigquant import BigQuantDataSource
 # 1. 定义策略
 class DualMovingAverageStrategy(Strategy):
     """双均线策略"""
-    
+
     warmup_period = 60  # 需要 60 天历史数据
     rebalance_mode = "replace"  # 完全替换持仓
-    
+
     def __init__(self):
         self.fast_period = 20
         self.slow_period = 60
         self.universe = ["000001.SZ", "600000.SH", "000002.SZ"]
-    
+
     def on_bar(self, context):
         signals = []
-        
+
         for symbol in self.universe:
             # 获取历史数据
             bars = context.query.get_bars(
                 symbol=symbol,
                 count=self.slow_period
             )
-            
+
             if len(bars) < self.slow_period:
                 continue
-            
+
             # 计算均线
             closes = [b.close for b in bars]
             fast_ma = sum(closes[-self.fast_period:]) / self.fast_period
             slow_ma = sum(closes) / self.slow_period
-            
+
             # 金叉买入
             if fast_ma > slow_ma:
                 signals.append(Signal(symbol=symbol, weight=1.0 / 3))
-        
+
         return signals
 
 # 2. 配置回测
@@ -79,7 +79,7 @@ result.render_html(path="backtest_report.html", open_browser=True)
 
 ## 输出示例
 
-```
+```text
 ======================================================================
 回测结果
 ======================================================================

@@ -39,23 +39,23 @@ from aquant.matching.cost import CostModel
 
 class MyTradingRules(CostModel):
     """自定义交易规则"""
-    
+
     def calculate_cost(self, side: str, shares: int, price: float) -> tuple[float, float]:
         """计算交易成本
-        
+
         Returns:
             (commission, stamp_duty)
         """
         commission = max(5.0, shares * price * 0.0003)
         stamp_duty = shares * price * 0.001 if side == "SELL" else 0.0
         return commission, stamp_duty
-    
+
     def can_trade(self, symbol: str, side: str, current_position: int) -> bool:
         """是否可以交易"""
         if side == "SELL" and current_position <= 0:
             return False
         return True
-    
+
     def round_shares(self, shares: float) -> int:
         """数量取整"""
         return int(shares // 100) * 100  # 100 股为一手

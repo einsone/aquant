@@ -279,6 +279,78 @@ aquant/
 - `demo.py` - 基础回测示例
 - `momentum_acceleration.py` - 动量加速策略
 
+## ❓ 常见问题（FAQ）
+
+### 如何开始使用？
+
+最快的方式是运行内置示例：
+
+```bash
+# 运行双均线策略示例
+uv run python examples/dual_moving_average.py
+
+# 或使用 CLI 工具
+uv run aquant run examples/dual_moving_average.py
+```
+
+### 支持哪些数据源？
+
+框架内置两种数据源：
+
+- **CSVDataSource** - 本地 CSV 文件（开箱即用，适合测试）
+- **ALDSDataSource** - ALDS 数据平台（需安装 `alds` 库）
+
+也可以继承 `DataSource` 基类实现自定义数据源。
+
+### 如何验证策略代码？
+
+使用 CLI 工具的 validate 命令：
+
+```bash
+uv run aquant validate my_strategy.py
+```
+
+会检查策略是否包含必需的组件（Strategy 类、main 函数）。
+
+### 性能如何？
+
+在标准测试环境下：
+
+- **吞吐量**：9,000 - 64,000 bars/秒
+- **100 只股票 × 250 天**：约 0.4 秒
+
+运行性能基准测试：
+
+```bash
+uv run aquant benchmark
+```
+
+### 如何添加风控规则？
+
+创建 `RiskManager` 并添加规则：
+
+```python
+from aquant.risk import RiskManager, MaxPositionSizeRule, MaxDrawdownRule
+
+risk_manager = RiskManager(rules=[
+    MaxPositionSizeRule(max_ratio=0.25),  # 单仓位不超过 25%
+    MaxDrawdownRule(max_dd=0.15),         # 最大回撤不超过 15%
+])
+
+engine = Engine(strategy, data_source, config, risk_manager=risk_manager)
+```
+
+### 支持多品种回测吗？
+
+目前框架主要针对股票回测优化。多品种（股票+期货）支持在规划中。
+
+### 如何获取帮助？
+
+- 查看 [快速入门](docs/quickstart.md)
+- 查看 [API 参考](docs/api_reference.md)
+- 查看 [示例代码](examples/)
+- 提交 Issue 到 GitHub
+
 ## 🙏 致谢
 
 框架设计参考了以下优秀项目：

@@ -45,6 +45,7 @@ def cmd_run(args):
     except Exception as e:
         print(f"错误: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 
@@ -55,11 +56,13 @@ def cmd_benchmark(args):
 
     try:
         from examples import benchmark
+
         benchmark.main()
         return 0
     except Exception as e:
         print(f"错误: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 
@@ -72,13 +75,11 @@ def cmd_validate(args):
         module = load_strategy_module(args.strategy)
 
         # 检查必需的组件
-        checks = {
-            "Strategy class": False,
-            "main() function": False,
-        }
+        checks = {"Strategy class": False, "main() function": False}
 
         # 查找 Strategy 子类
         from aquant.strategy.base import Strategy
+
         for name in dir(module):
             obj = getattr(module, name)
             if isinstance(obj, type) and issubclass(obj, Strategy) and obj != Strategy:
@@ -106,16 +107,14 @@ def cmd_validate(args):
     except Exception as e:
         print(f"错误: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 
 
 def main():
     """CLI 入口函数。"""
-    parser = argparse.ArgumentParser(
-        prog="aquant",
-        description="Aquant 量化回测框架命令行工具"
-    )
+    parser = argparse.ArgumentParser(prog="aquant", description="Aquant 量化回测框架命令行工具")
 
     subparsers = parser.add_subparsers(dest="command", help="可用命令")
 
@@ -137,11 +136,7 @@ def main():
         return 1
 
     # 路由到对应的命令处理函数
-    commands = {
-        "run": cmd_run,
-        "benchmark": cmd_benchmark,
-        "validate": cmd_validate,
-    }
+    commands = {"run": cmd_run, "benchmark": cmd_benchmark, "validate": cmd_validate}
 
     handler = commands.get(args.command)
     if handler:

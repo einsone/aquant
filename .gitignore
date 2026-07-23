@@ -19,3 +19,6 @@ secrets*
 # 生成的报告与输出
 *.html
 *.csv
+
+# 数据目录
+data/

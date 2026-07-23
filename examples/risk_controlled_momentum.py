@@ -12,14 +12,10 @@ from datetime import date
 
 from aquant.core.context import Context
 from aquant.core.engine import BacktestConfig, Engine
-from aquant.data.alds import ALDSDataSource
+from aquant.data.csv import CSVDataSource, create_sample_csv
 from aquant.risk import ConcentrationRule, MaxDrawdownRule, MaxPositionSizeRule, RiskManager
 from aquant.strategy.base import Strategy
 from aquant.strategy.signal import Signal
-
-
-# 股票池定义
-UNIVERSE = ["000001.SZ", "000002.SZ", "600000.SH", "600519.SH", "600036.SH", "000858.SZ", "601318.SH", "600887.SH"]
 
 
 class RiskControlledMomentumStrategy(Strategy):
@@ -33,15 +29,18 @@ class RiskControlledMomentumStrategy(Strategy):
         选取涨幅前 N 名，默认 5
     max_drawdown_threshold : float
         最大回撤阈值，超过则清仓，默认 0.10（10%）
+    symbols : list[str]
+        股票池
     """
 
     warmup_period: int = 60
     rebalance_mode: str = "replace"
 
-    def __init__(self, lookback: int = 20, top_n: int = 5, max_drawdown_threshold: float = 0.10, data_source: ALDSDataSource | None = None):
+    def __init__(self, lookback: int = 20, top_n: int = 5, max_drawdown_threshold: float = 0.10, symbols: list[str] | None = None, data_source: CSVDataSource | None = None):
         self.lookback = lookback
         self.top_n = top_n
         self.max_drawdown_threshold = max_drawdown_threshold
+        self.symbols = symbols or []
         self.data_source = data_source
 
         # 存储价格历史
@@ -58,7 +57,7 @@ class RiskControlledMomentumStrategy(Strategy):
             return []  # 返回空信号，清空所有持仓
 
         # 从数据源加载当日行情
-        bars = self.data_source.load_bars(context.current_date, set(UNIVERSE))
+        bars = self.data_source.load_bars(context.current_date, set(self.symbols))
 
         # 更新价格历史
         for symbol, bar in bars.items():
@@ -73,7 +72,7 @@ class RiskControlledMomentumStrategy(Strategy):
 
         # 计算动量并排序
         momentum_scores = []
-        for symbol in UNIVERSE:
+        for symbol in self.symbols:
             prices = self.price_history.get(symbol, [])
             if len(prices) < self.lookback:
                 continue
@@ -100,14 +99,23 @@ class RiskControlledMomentumStrategy(Strategy):
 
 def main():
     """运行带风控的动量策略回测。"""
+    # 定义股票池
+    symbols = ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "NVDA", "META", "NFLX"]
+
+    # 生成模拟数据
+    print("生成模拟数据...")
+    data_dir = "data/risk_momentum"
+    create_sample_csv(data_dir=data_dir, symbols=symbols, start=date(2022, 1, 1), end=date(2023, 12, 31))
+    print(f"  数据已生成: {data_dir}")
+
     # 创建数据源
-    data_source = ALDSDataSource()
+    data_source = CSVDataSource(data_dir)
 
     # 创建策略
-    strategy = RiskControlledMomentumStrategy(lookback=20, top_n=5, max_drawdown_threshold=0.10, data_source=data_source)
+    strategy = RiskControlledMomentumStrategy(lookback=20, top_n=5, max_drawdown_threshold=0.10, symbols=symbols, data_source=data_source)
 
     # 配置回测
-    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 12, 31), initial_capital=1_000_000.0)
+    config = BacktestConfig(start=date(2022, 1, 1), end=date(2023, 12, 31), initial_capital=1_000_000.0)
 
     # 配置风控规则
     risk_manager = RiskManager(

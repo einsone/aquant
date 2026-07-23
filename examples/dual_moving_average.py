@@ -11,13 +11,9 @@ from datetime import date
 
 from aquant.core.context import Context
 from aquant.core.engine import BacktestConfig, Engine
-from aquant.data.alds import ALDSDataSource
+from aquant.data.csv import CSVDataSource, create_sample_csv
 from aquant.strategy.base import Strategy
 from aquant.strategy.signal import Signal
-
-
-# 股票池定义
-UNIVERSE = ["000001.SZ", "000002.SZ", "600000.SH", "600519.SH"]
 
 
 class DualMovingAverageStrategy(Strategy):
@@ -29,14 +25,17 @@ class DualMovingAverageStrategy(Strategy):
         短期均线窗口，默认 5
     long_window : int
         长期均线窗口，默认 20
+    symbols : list[str]
+        股票池
     """
 
     warmup_period: int = 60
     rebalance_mode: str = "replace"
 
-    def __init__(self, short_window: int = 5, long_window: int = 20, data_source: ALDSDataSource | None = None):
+    def __init__(self, short_window: int = 5, long_window: int = 20, symbols: list[str] | None = None, data_source: CSVDataSource | None = None):
         self.short_window = short_window
         self.long_window = long_window
+        self.symbols = symbols or []
         self.data_source = data_source
 
         # 存储每个标的的价格历史
@@ -50,7 +49,7 @@ class DualMovingAverageStrategy(Strategy):
         signals = []
 
         # 从数据源加载当日行情
-        bars = self.data_source.load_bars(context.current_date, set(UNIVERSE))
+        bars = self.data_source.load_bars(context.current_date, set(self.symbols))
 
         # 更新价格历史
         for symbol, bar in bars.items():
@@ -64,7 +63,7 @@ class DualMovingAverageStrategy(Strategy):
                 self.price_history[symbol] = self.price_history[symbol][-self.long_window :]
 
         # 计算均线并生成信号
-        for symbol in UNIVERSE:
+        for symbol in self.symbols:
             prices = self.price_history.get(symbol, [])
             if len(prices) < self.long_window:
                 # 数据不足，跳过
@@ -78,7 +77,7 @@ class DualMovingAverageStrategy(Strategy):
             if short_ma > long_ma:
                 # 金叉：短期均线在长期均线之上，买入信号
                 # 等权重配置
-                signals.append(Signal(symbol=symbol, weight=1.0 / len(UNIVERSE)))
+                signals.append(Signal(symbol=symbol, weight=1.0 / len(self.symbols)))
             # else: 死叉或无信号，不持仓（自动平仓）
 
         return signals
@@ -86,14 +85,23 @@ class DualMovingAverageStrategy(Strategy):
 
 def main():
     """运行双均线策略回测。"""
+    # 定义股票池
+    symbols = ["AAPL", "GOOGL", "MSFT", "AMZN"]
+
+    # 生成模拟数据
+    print("生成模拟数据...")
+    data_dir = "data/dual_ma"
+    create_sample_csv(data_dir=data_dir, symbols=symbols, start=date(2022, 1, 1), end=date(2023, 12, 31))
+    print(f"  数据已生成: {data_dir}")
+
     # 创建数据源
-    data_source = ALDSDataSource()
+    data_source = CSVDataSource(data_dir)
 
     # 创建策略
-    strategy = DualMovingAverageStrategy(short_window=5, long_window=20, data_source=data_source)
+    strategy = DualMovingAverageStrategy(short_window=5, long_window=20, symbols=symbols, data_source=data_source)
 
     # 配置回测
-    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 12, 31), initial_capital=1_000_000.0)
+    config = BacktestConfig(start=date(2022, 1, 1), end=date(2023, 12, 31), initial_capital=1_000_000.0)
 
     # 创建引擎并运行
     engine = Engine(strategy=strategy, data_source=data_source, config=config)

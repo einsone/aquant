@@ -12,13 +12,9 @@ from datetime import date
 
 from aquant.core.context import Context
 from aquant.core.engine import BacktestConfig, Engine
-from aquant.data.alds import ALDSDataSource
+from aquant.data.csv import CSVDataSource, create_sample_csv
 from aquant.strategy.base import Strategy
 from aquant.strategy.signal import Signal
-
-
-# 股票池定义
-UNIVERSE = ["000001.SZ", "000002.SZ", "600000.SH", "600519.SH", "600036.SH"]
 
 
 class BollingerBandsStrategy(Strategy):
@@ -30,14 +26,17 @@ class BollingerBandsStrategy(Strategy):
         均线窗口，默认 20
     num_std : float
         标准差倍数，默认 2.0
+    symbols : list[str]
+        股票池
     """
 
     warmup_period: int = 40
     rebalance_mode: str = "replace"
 
-    def __init__(self, window: int = 20, num_std: float = 2.0, data_source: ALDSDataSource | None = None):
+    def __init__(self, window: int = 20, num_std: float = 2.0, symbols: list[str] | None = None, data_source: CSVDataSource | None = None):
         self.window = window
         self.num_std = num_std
+        self.symbols = symbols or []
         self.data_source = data_source
 
         # 存储价格历史
@@ -51,7 +50,7 @@ class BollingerBandsStrategy(Strategy):
         signals = []
 
         # 从数据源加载当日行情
-        bars = self.data_source.load_bars(context.current_date, set(UNIVERSE))
+        bars = self.data_source.load_bars(context.current_date, set(self.symbols))
 
         # 更新价格历史
         for symbol, bar in bars.items():
@@ -67,7 +66,7 @@ class BollingerBandsStrategy(Strategy):
         # 计算布林带并生成信号
         buy_candidates = []
 
-        for symbol in UNIVERSE:
+        for symbol in self.symbols:
             prices = self.price_history.get(symbol, [])
             if len(prices) < self.window:
                 continue
@@ -101,14 +100,23 @@ class BollingerBandsStrategy(Strategy):
 
 def main():
     """运行布林带策略回测。"""
+    # 定义股票池
+    symbols = ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA"]
+
+    # 生成模拟数据
+    print("生成模拟数据...")
+    data_dir = "data/bollinger"
+    create_sample_csv(data_dir=data_dir, symbols=symbols, start=date(2022, 1, 1), end=date(2023, 12, 31))
+    print(f"  数据已生成: {data_dir}")
+
     # 创建数据源
-    data_source = ALDSDataSource()
+    data_source = CSVDataSource(data_dir)
 
     # 创建策略
-    strategy = BollingerBandsStrategy(window=20, num_std=2.0, data_source=data_source)
+    strategy = BollingerBandsStrategy(window=20, num_std=2.0, symbols=symbols, data_source=data_source)
 
     # 配置回测
-    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 12, 31), initial_capital=1_000_000.0)
+    config = BacktestConfig(start=date(2022, 1, 1), end=date(2023, 12, 31), initial_capital=1_000_000.0)
 
     # 创建引擎并运行
     engine = Engine(strategy=strategy, data_source=data_source, config=config)

@@ -7,27 +7,38 @@ from datetime import date
 
 import numpy as np
 import pandas as pd
-
-from aquant.backtest.result import BacktestResult
+import polars as pl
 
 
 class StrategyAnalyzer:
     """策略分析器"""
 
-    def __init__(self, result: BacktestResult):
+    def __init__(self, result):
+        """初始化分析器
+
+        Args:
+            result: BacktestResult 对象
+        """
         self.result = result
         self.equity_curve = self._build_equity_curve()
 
     def _build_equity_curve(self) -> pd.Series:
         """构建净值曲线"""
-        nav_data = []
-        for snapshot in self.result.portfolio_snapshots:
-            nav_data.append({"date": snapshot.date, "nav": snapshot.nav})
+        # 从 portfolio 的 daily_nav 构建
+        nav_df = self.result.portfolio._daily_nav
 
-        if not nav_data:
+        if nav_df is None or len(nav_df) == 0:
             return pd.Series(dtype=float)
 
-        df = pd.DataFrame(nav_data)
+        # 转换为 pandas
+        if isinstance(nav_df, pl.DataFrame):
+            df = nav_df.to_pandas()
+        else:
+            df = nav_df
+
+        if "date" not in df.columns or "nav" not in df.columns:
+            return pd.Series(dtype=float)
+
         df["date"] = pd.to_datetime(df["date"])
         return df.set_index("date")["nav"]
 

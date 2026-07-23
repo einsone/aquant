@@ -5,7 +5,6 @@
 
 import time
 from datetime import date
-from typing import Any
 
 from aquant import BacktestConfig, Engine, Signal, Strategy
 from aquant.core.context import Context
@@ -31,14 +30,7 @@ class SimpleBenchmarkStrategy(Strategy):
 class BenchmarkResult:
     """基准测试结果"""
 
-    def __init__(
-        self,
-        name: str,
-        duration: float,
-        trading_days: int,
-        symbols_count: int,
-        trades_count: int,
-    ):
+    def __init__(self, name: str, duration: float, trading_days: int, symbols_count: int, trades_count: int):
         self.name = name
         self.duration = duration
         self.trading_days = trading_days
@@ -56,15 +48,7 @@ class BenchmarkResult:
         return self.trades_count / self.duration if self.duration > 0 else 0
 
     def __str__(self) -> str:
-        return (
-            f"{self.name}:\n"
-            f"  耗时: {self.duration:.2f}s\n"
-            f"  交易日: {self.trading_days}\n"
-            f"  股票数: {self.symbols_count}\n"
-            f"  交易次数: {self.trades_count}\n"
-            f"  速度: {self.days_per_second:.1f} 天/秒\n"
-            f"  交易速度: {self.trades_per_second:.1f} 笔/秒"
-        )
+        return f"{self.name}:\n  耗时: {self.duration:.2f}s\n  交易日: {self.trading_days}\n  股票数: {self.symbols_count}\n  交易次数: {self.trades_count}\n  速度: {self.days_per_second:.1f} 天/秒\n  交易速度: {self.trades_per_second:.1f} 笔/秒"
 
 
 def benchmark_single_stock_one_year() -> BenchmarkResult:
@@ -74,12 +58,7 @@ def benchmark_single_stock_one_year() -> BenchmarkResult:
     data_source = ALDSDataSource()
     strategy = SimpleBenchmarkStrategy(["000001.SZ"], data_source)
 
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 12, 31),
-        initial_capital=1_000_000.0,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 12, 31), initial_capital=1_000_000.0, show_progress=False)
 
     start_time = time.time()
     engine = Engine(strategy, data_source, config)
@@ -88,41 +67,19 @@ def benchmark_single_stock_one_year() -> BenchmarkResult:
 
     trading_days = len(data_source.load_calendar(config.start, config.end))
 
-    return BenchmarkResult(
-        name="单只股票 1 年",
-        duration=duration,
-        trading_days=trading_days,
-        symbols_count=1,
-        trades_count=len(result.portfolio.trade_log),
-    )
+    return BenchmarkResult(name="单只股票 1 年", duration=duration, trading_days=trading_days, symbols_count=1, trades_count=len(result.portfolio.trade_log))
 
 
 def benchmark_ten_stocks_one_year() -> BenchmarkResult:
     """基准测试：10 只股票，1 年回测"""
     print("运行基准测试：10 只股票，1 年回测...")
 
-    universe = [
-        "000001.SZ",
-        "000002.SZ",
-        "000333.SZ",
-        "600000.SH",
-        "600036.SH",
-        "600519.SH",
-        "601398.SH",
-        "601857.SH",
-        "601988.SH",
-        "603259.SH",
-    ]
+    universe = ["000001.SZ", "000002.SZ", "000333.SZ", "600000.SH", "600036.SH", "600519.SH", "601398.SH", "601857.SH", "601988.SH", "603259.SH"]
 
     data_source = ALDSDataSource()
     strategy = SimpleBenchmarkStrategy(universe, data_source)
 
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 12, 31),
-        initial_capital=1_000_000.0,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 12, 31), initial_capital=1_000_000.0, show_progress=False)
 
     start_time = time.time()
     engine = Engine(strategy, data_source, config)
@@ -131,13 +88,7 @@ def benchmark_ten_stocks_one_year() -> BenchmarkResult:
 
     trading_days = len(data_source.load_calendar(config.start, config.end))
 
-    return BenchmarkResult(
-        name="10 只股票 1 年",
-        duration=duration,
-        trading_days=trading_days,
-        symbols_count=len(universe),
-        trades_count=len(result.portfolio.trade_log),
-    )
+    return BenchmarkResult(name="10 只股票 1 年", duration=duration, trading_days=trading_days, symbols_count=len(universe), trades_count=len(result.portfolio.trade_log))
 
 
 def benchmark_single_stock_three_years() -> BenchmarkResult:
@@ -147,12 +98,7 @@ def benchmark_single_stock_three_years() -> BenchmarkResult:
     data_source = ALDSDataSource()
     strategy = SimpleBenchmarkStrategy(["000001.SZ"], data_source)
 
-    config = BacktestConfig(
-        start=date(2021, 1, 1),
-        end=date(2023, 12, 31),
-        initial_capital=1_000_000.0,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2021, 1, 1), end=date(2023, 12, 31), initial_capital=1_000_000.0, show_progress=False)
 
     start_time = time.time()
     engine = Engine(strategy, data_source, config)
@@ -161,13 +107,7 @@ def benchmark_single_stock_three_years() -> BenchmarkResult:
 
     trading_days = len(data_source.load_calendar(config.start, config.end))
 
-    return BenchmarkResult(
-        name="单只股票 3 年",
-        duration=duration,
-        trading_days=trading_days,
-        symbols_count=1,
-        trades_count=len(result.portfolio.trade_log),
-    )
+    return BenchmarkResult(name="单只股票 3 年", duration=duration, trading_days=trading_days, symbols_count=1, trades_count=len(result.portfolio.trade_log))
 
 
 def benchmark_frequent_rebalance() -> BenchmarkResult:
@@ -194,12 +134,7 @@ def benchmark_frequent_rebalance() -> BenchmarkResult:
     data_source = ALDSDataSource()
     strategy = FrequentRebalanceStrategy(universe, data_source)
 
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 12, 31),
-        initial_capital=1_000_000.0,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 12, 31), initial_capital=1_000_000.0, show_progress=False)
 
     start_time = time.time()
     engine = Engine(strategy, data_source, config)
@@ -208,13 +143,7 @@ def benchmark_frequent_rebalance() -> BenchmarkResult:
 
     trading_days = len(data_source.load_calendar(config.start, config.end))
 
-    return BenchmarkResult(
-        name="高频调仓策略",
-        duration=duration,
-        trading_days=trading_days,
-        symbols_count=len(universe),
-        trades_count=len(result.portfolio.trade_log),
-    )
+    return BenchmarkResult(name="高频调仓策略", duration=duration, trading_days=trading_days, symbols_count=len(universe), trades_count=len(result.portfolio.trade_log))
 
 
 def run_all_benchmarks() -> list[BenchmarkResult]:

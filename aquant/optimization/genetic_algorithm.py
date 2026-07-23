@@ -5,7 +5,7 @@
 
 import random
 from datetime import date
-from typing import Any, Callable
+from typing import Any
 
 from aquant import BacktestConfig, Engine, Strategy
 from aquant.data.source import DataSource
@@ -25,18 +25,7 @@ class Individual:
 class GeneticAlgorithm:
     """遗传算法优化器"""
 
-    def __init__(
-        self,
-        strategy_class: type[Strategy],
-        param_ranges: dict[str, tuple],
-        data_source: DataSource,
-        backtest_config: BacktestConfig,
-        population_size: int = 20,
-        generations: int = 10,
-        mutation_rate: float = 0.1,
-        crossover_rate: float = 0.7,
-        scoring: str = "sharpe",
-    ):
+    def __init__(self, strategy_class: type[Strategy], param_ranges: dict[str, tuple], data_source: DataSource, backtest_config: BacktestConfig, population_size: int = 20, generations: int = 10, mutation_rate: float = 0.1, crossover_rate: float = 0.7, scoring: str = "sharpe"):
         """
         Args:
             strategy_class: 策略类
@@ -113,22 +102,11 @@ class GeneticAlgorithm:
 
             # 记录历史
             best = max(self.population, key=lambda x: x.fitness)
-            avg_fitness = sum(ind.fitness for ind in self.population) / len(
-                self.population
-            )
-            self.history.append(
-                {
-                    "generation": generation,
-                    "best_fitness": best.fitness,
-                    "avg_fitness": avg_fitness,
-                    "best_params": best.genes.copy(),
-                }
-            )
+            avg_fitness = sum(ind.fitness for ind in self.population) / len(self.population)
+            self.history.append({"generation": generation, "best_fitness": best.fitness, "avg_fitness": avg_fitness, "best_params": best.genes.copy()})
 
             if verbose:
-                print(
-                    f"第 {generation} 代 - 最佳: {best.fitness:.4f}, 平均: {avg_fitness:.4f}"
-                )
+                print(f"第 {generation} 代 - 最佳: {best.fitness:.4f}, 平均: {avg_fitness:.4f}")
 
         # 选出最优个体
         self.best_individual = max(self.population, key=lambda x: x.fitness)
@@ -151,7 +129,7 @@ class GeneticAlgorithm:
         for _ in range(self.population_size):
             genes = {}
             for param, (min_val, max_val, param_type) in self.param_ranges.items():
-                if param_type == int:
+                if param_type is int:
                     genes[param] = random.randint(min_val, max_val)
                 else:
                     genes[param] = random.uniform(min_val, max_val)
@@ -166,9 +144,7 @@ class GeneticAlgorithm:
         for individual in individuals:
             try:
                 # 创建策略并回测
-                strategy = self.strategy_class(
-                    **individual.genes, data_source=self.data_source
-                )
+                strategy = self.strategy_class(**individual.genes, data_source=self.data_source)
                 engine = Engine(strategy, self.data_source, self.backtest_config)
                 result = engine.run()
                 result.compute_metrics()
@@ -226,7 +202,7 @@ class GeneticAlgorithm:
         for individual in offspring:
             for param, (min_val, max_val, param_type) in self.param_ranges.items():
                 if random.random() < self.mutation_rate:
-                    if param_type == int:
+                    if param_type is int:
                         individual.genes[param] = random.randint(min_val, max_val)
                     else:
                         individual.genes[param] = random.uniform(min_val, max_val)
@@ -251,12 +227,7 @@ def example_genetic_algorithm():
 
         rebalance_mode = "replace"
 
-        def __init__(
-            self,
-            fast_period: int,
-            slow_period: int,
-            data_source: DataSource,
-        ):
+        def __init__(self, fast_period: int, slow_period: int, data_source: DataSource):
             self.fast_period = fast_period
             self.slow_period = slow_period
             self.data_source = data_source
@@ -278,32 +249,14 @@ def example_genetic_algorithm():
             return []
 
     # 定义参数范围
-    param_ranges = {
-        "fast_period": (5, 20, int),
-        "slow_period": (20, 60, int),
-    }
+    param_ranges = {"fast_period": (5, 20, int), "slow_period": (20, 60, int)}
 
     # 回测配置
     data_source = ALDSDataSource()
-    backtest_config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 12, 31),
-        initial_capital=1_000_000.0,
-        show_progress=False,
-    )
+    backtest_config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 12, 31), initial_capital=1_000_000.0, show_progress=False)
 
     # 执行遗传算法
-    ga = GeneticAlgorithm(
-        strategy_class=ParameterizedStrategy,
-        param_ranges=param_ranges,
-        data_source=data_source,
-        backtest_config=backtest_config,
-        population_size=20,
-        generations=10,
-        mutation_rate=0.1,
-        crossover_rate=0.7,
-        scoring="sharpe",
-    )
+    ga = GeneticAlgorithm(strategy_class=ParameterizedStrategy, param_ranges=param_ranges, data_source=data_source, backtest_config=backtest_config, population_size=20, generations=10, mutation_rate=0.1, crossover_rate=0.7, scoring="sharpe")
 
     best_params = ga.run(verbose=True)
     print(f"最优参数: {best_params}")

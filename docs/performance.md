@@ -58,7 +58,7 @@ class CachedDataSource:
     def __init__(self, underlying: ALDSDataSource):
         self.underlying = underlying
         self._cache = {}
-    
+
     def load_bars(self, dt: date, symbols: set[str]):
         key = (dt, frozenset(symbols))
         if key not in self._cache:
@@ -128,7 +128,7 @@ def on_bar(self, context: Context) -> list[Signal]:
     # 批量查询一次
     all_bars = {s: context.query.get_bars(s, count=20) for s in self.universe}
     all_positions = {s: context.query.get_position(s) for s in self.universe}
-    
+
     for symbol in self.universe:
         bars = all_bars[symbol]
         position = all_positions[symbol]
@@ -151,14 +151,14 @@ class LowFrequencyStrategy(Strategy):
     def __init__(self):
         self.rebalance_period = 20  # 每 20 天调仓一次
         self.days_since_rebalance = 0
-    
+
     def on_bar(self, context: Context) -> list[Signal]:
         self.days_since_rebalance += 1
-        
+
         # 不到调仓日，返回空信号
         if self.days_since_rebalance < self.rebalance_period:
             return []
-        
+
         self.days_since_rebalance = 0
         # 执行调仓逻辑
         return self._generate_signals(context)
@@ -223,7 +223,7 @@ print(f"最优参数: {best_param}")
 ```python
 class MemoryEfficientStrategy(Strategy):
     warmup_period = 20  # 只需要 20 天数据
-    
+
     def on_bar(self, context: Context) -> list[Signal]:
         # 只查询需要的数据量
         bars = context.query.get_bars(symbol, count=self.warmup_period)
@@ -235,11 +235,11 @@ class MemoryEfficientStrategy(Strategy):
 def on_bar(self, context: Context) -> list[Signal]:
     # 处理完后清理缓存
     signals = self._generate_signals(context)
-    
+
     # 清理旧的缓存数据
     if len(self.cache) > 1000:
         self.cache.clear()
-    
+
     return signals
 ```
 
@@ -256,16 +256,16 @@ logger = structlog.get_logger()
 class MonitoredStrategy(Strategy):
     def on_bar(self, context: Context) -> list[Signal]:
         start_time = time.time()
-        
+
         signals = self._generate_signals(context)
-        
+
         duration = time.time() - start_time
         logger.debug(
             "策略执行时间",
             date=context.current_date,
             duration_ms=duration * 1000,
         )
-        
+
         return signals
 ```
 
@@ -277,12 +277,12 @@ class PerformanceMetrics:
         self.call_count = 0
         self.total_time = 0.0
         self.max_time = 0.0
-    
+
     def record(self, duration: float):
         self.call_count += 1
         self.total_time += duration
         self.max_time = max(self.max_time, duration)
-    
+
     def summary(self):
         avg_time = self.total_time / self.call_count if self.call_count > 0 else 0
         print(f"调用次数: {self.call_count}")

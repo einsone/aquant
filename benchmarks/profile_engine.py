@@ -34,30 +34,19 @@ def profile_backtest():
     print()
 
     # 配置回测
-    universe = [
-        "000001.SZ",
-        "000002.SZ",
-        "600000.SH",
-        "600036.SH",
-        "600519.SH",
-    ]
+    universe = ["000001.SZ", "000002.SZ", "600000.SH", "600036.SH", "600519.SH"]
 
     data_source = ALDSDataSource()
     strategy = SimpleStrategy(universe, data_source)
 
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 12, 31),
-        initial_capital=1_000_000.0,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 12, 31), initial_capital=1_000_000.0, show_progress=False)
 
     # 性能分析
     profiler = cProfile.Profile()
     profiler.enable()
 
     engine = Engine(strategy, data_source, config)
-    result = engine.run()
+    _result = engine.run()
 
     profiler.disable()
 

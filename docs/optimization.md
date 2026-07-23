@@ -262,7 +262,7 @@ def composite_score(row):
     sharpe = row["sharpe"]
     drawdown = row["max_drawdown"]
     return_pct = row["total_return"]
-    
+
     # 综合得分：夏普 + 收益 - 回撤惩罚
     return sharpe + return_pct - abs(drawdown) * 2
 

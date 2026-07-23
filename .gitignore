@@ -15,3 +15,7 @@ venv/
 *.p12
 credentials*
 secrets*
+
+# 生成的报告与输出
+*.html
+*.csv

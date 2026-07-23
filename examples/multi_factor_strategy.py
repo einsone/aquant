@@ -21,14 +21,7 @@ class MultiFactorStrategy(Strategy):
     def __init__(self, data_source):
         self.data_source = data_source
         # 股票池：沪深 300 成分股示例
-        self.universe = [
-            "000001.SZ",
-            "000002.SZ",
-            "000333.SZ",
-            "600000.SH",
-            "600036.SH",
-            "600519.SH",
-        ]
+        self.universe = ["000001.SZ", "000002.SZ", "000333.SZ", "600000.SH", "600036.SH", "600519.SH"]
         # 因子权重
         self.momentum_weight = 0.4
         self.reversal_weight = 0.3
@@ -52,11 +45,7 @@ class MultiFactorStrategy(Strategy):
             volume = self._calc_volume(bars)
 
             # 加权合成总得分
-            total_score = (
-                self.momentum_weight * momentum
-                + self.reversal_weight * reversal
-                + self.volume_weight * volume
-            )
+            total_score = self.momentum_weight * momentum + self.reversal_weight * reversal + self.volume_weight * volume
 
             scores[symbol] = total_score
 
@@ -67,7 +56,7 @@ class MultiFactorStrategy(Strategy):
         # 生成等权重信号
         signals = []
         weight = 1.0 / len(top_stocks) if top_stocks else 0.0
-        for symbol, score in top_stocks:
+        for symbol, _score in top_stocks:
             signals.append(Signal(symbol=symbol, weight=weight))
 
         return signals
@@ -96,15 +85,7 @@ class MultiFactorStrategy(Strategy):
 
 def main():
     # 配置回测
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 12, 31),
-        initial_capital=1_000_000.0,
-        commission_rate=0.0003,
-        stamp_duty_rate=0.001,
-        min_commission=5.0,
-        show_progress=True,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 12, 31), initial_capital=1_000_000.0, commission_rate=0.0003, stamp_duty_rate=0.001, min_commission=5.0, show_progress=True)
 
     # 运行回测
     data_source = ALDSDataSource()

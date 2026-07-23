@@ -82,15 +82,7 @@ class MeanReversionStrategy(Strategy):
 
 def main():
     # 配置回测
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 12, 31),
-        initial_capital=1_000_000.0,
-        commission_rate=0.0003,
-        stamp_duty_rate=0.001,
-        min_commission=5.0,
-        show_progress=True,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 12, 31), initial_capital=1_000_000.0, commission_rate=0.0003, stamp_duty_rate=0.001, min_commission=5.0, show_progress=True)
 
     # 运行回测
     data_source = ALDSDataSource()

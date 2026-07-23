@@ -46,9 +46,7 @@ class PairsTradingStrategy(Strategy):
         # 计算价差统计量
         recent_spreads = spreads[-self.lookback :]
         mean_spread = sum(recent_spreads) / len(recent_spreads)
-        variance = sum((s - mean_spread) ** 2 for s in recent_spreads) / len(
-            recent_spreads
-        )
+        variance = sum((s - mean_spread) ** 2 for s in recent_spreads) / len(recent_spreads)
         std_spread = variance**0.5
 
         if std_spread == 0:
@@ -76,9 +74,7 @@ class PairsTradingStrategy(Strategy):
         else:
             # 有持仓时判断平仓
             should_exit = False
-            if self.position == "short_spread" and z_score < self.exit_threshold:
-                should_exit = True
-            elif self.position == "long_spread" and z_score > -self.exit_threshold:
+            if (self.position == "short_spread" and z_score < self.exit_threshold) or (self.position == "long_spread" and z_score > -self.exit_threshold):
                 should_exit = True
 
             if should_exit:
@@ -91,15 +87,7 @@ class PairsTradingStrategy(Strategy):
 
 def main():
     # 配置回测
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 12, 31),
-        initial_capital=1_000_000.0,
-        commission_rate=0.0003,
-        stamp_duty_rate=0.001,
-        min_commission=5.0,
-        show_progress=True,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 12, 31), initial_capital=1_000_000.0, commission_rate=0.0003, stamp_duty_rate=0.001, min_commission=5.0, show_progress=True)
 
     # 选择一对相关股票（示例：两只银行股）
     pair_a = "600036.SH"  # 招商银行

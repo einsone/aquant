@@ -16,11 +16,13 @@
 ### 1. 数据加载（主要瓶颈）
 
 **位置**: `Engine.run()` L195, L206, L232
+
 ```python
 self._day_bars = self._data_source.load_bars(event.date, symbols)
 ```
 
 **问题**:
+
 - 每个交易日调用 1-3 次 `load_bars()`
 - CSV 数据源：每次重新读取文件
 - 没有批量预加载机制
@@ -32,6 +34,7 @@ self._day_bars = self._data_source.load_bars(event.date, symbols)
 ### 2. Context 构建
 
 **位置**: `Engine._build_context()` L156-168
+
 ```python
 def _build_context(self, dt: date) -> Context:
     positions = self._portfolio.position_views()
@@ -41,6 +44,7 @@ def _build_context(self, dt: date) -> Context:
 ```
 
 **问题**:
+
 - 每个 SIGNAL 阶段都重新创建 PortfolioQueryService
 - 持仓视图复制开销
 
@@ -51,14 +55,16 @@ def _build_context(self, dt: date) -> Context:
 ### 3. Signal 对象复制
 
 **位置**: `Engine.run()` L224
+
 ```python
 self._pending_signals = [
-    Signal(symbol=s.symbol, weight=s.weight, signal_date=event.date, meta=dict(s.meta)) 
+    Signal(symbol=s.symbol, weight=s.weight, signal_date=event.date, meta=dict(s.meta))
     for s in filtered_signals
 ]
 ```
 
 **问题**:
+
 - 每个信号都创建新对象
 - meta 字典浅拷贝
 
@@ -69,6 +75,7 @@ self._pending_signals = [
 ### 4. Polars 数据处理
 
 **位置**: CSV/ALDS 数据源
+
 ```python
 df_filtered = df.filter(pl.col("symbol").is_in(symbols))
 for row in df_filtered.iter_rows(named=True):
@@ -76,6 +83,7 @@ for row in df_filtered.iter_rows(named=True):
 ```
 
 **问题**:
+
 - `iter_rows(named=True)` 是最慢的迭代方式
 - 没有利用 Polars 向量化优势
 
@@ -90,27 +98,28 @@ for row in df_filtered.iter_rows(named=True):
 **目标**: 一次性加载多天数据，减少 I/O 次数
 
 **实现**:
+
 ```python
 class DataPreloader:
     """数据预加载器，批量加载并缓存数据"""
-    
+
     def __init__(self, data_source: DataSource, trading_days: list[date], symbols: set[str]):
         self.data_source = data_source
         self._cache: dict[date, dict[str, DayBar]] = {}
-        
+
         # 批量预加载
         self._preload(trading_days, symbols)
-    
+
     def _preload(self, trading_days: list[date], symbols: set[str]):
         """批量加载所有交易日数据"""
         # 分批加载（避免内存溢出）
         batch_size = 50  # 每批加载 50 天
-        
+
         for i in range(0, len(trading_days), batch_size):
             batch = trading_days[i:i+batch_size]
             for dt in batch:
                 self._cache[dt] = self.data_source.load_bars(dt, symbols)
-    
+
     def get_bars(self, dt: date) -> dict[str, DayBar]:
         """从缓存获取数据"""
         return self._cache.get(dt, {})
@@ -125,6 +134,7 @@ class DataPreloader:
 **目标**: 复用 Context 和 QueryService 对象
 
 **实现**:
+
 ```python
 class Engine:
     def __init__(self, ...):
@@ -133,14 +143,14 @@ class Engine:
             daily_nav=self._portfolio._daily_nav,
             trade_log=self._portfolio.trade_log
         )
-    
+
     def _build_context(self, dt: date) -> Context:
         # 复用 query_service，只更新数据引用
         positions = self._portfolio.position_views()
         total_value = self._portfolio.cash + sum(
             p.shares * p.last_close for p in positions.values()
         )
-        
+
         return Context(
             current_date=dt,
             positions=positions,
@@ -159,15 +169,16 @@ class Engine:
 **目标**: 利用 Polars 向量化操作，避免逐行迭代
 
 **实现**:
+
 ```python
 def load_bars(self, dt: date, symbols: set[str]) -> dict[str, DayBar]:
     df = self._load_date_csv(dt)
     if df is None:
         return {}
-    
+
     # 筛选指定股票
     df_filtered = df.filter(pl.col("symbol").is_in(symbols))
-    
+
     # 向量化转换（避免 iter_rows）
     result = {}
     symbols_list = df_filtered.get_column("symbol").to_list()
@@ -177,7 +188,7 @@ def load_bars(self, dt: date, symbols: set[str]) -> dict[str, DayBar]:
     highs = df_filtered.get_column("high").to_list()
     lows = df_filtered.get_column("low").to_list()
     volumes = df_filtered.get_column("volume").to_list()
-    
+
     for i, sym in enumerate(symbols_list):
         result[sym] = DayBar(
             symbol=sym,
@@ -191,7 +202,7 @@ def load_bars(self, dt: date, symbols: set[str]) -> dict[str, DayBar]:
             down_limit=float(closes[i]) * 0.9,
             is_halted=False,
         )
-    
+
     return result
 ```
 
@@ -204,6 +215,7 @@ def load_bars(self, dt: date, symbols: set[str]) -> dict[str, DayBar]:
 **目标**: 避免创建新 Signal 对象
 
 **实现**:
+
 ```python
 # 在 Signal 类中添加
 class Signal:
@@ -222,6 +234,7 @@ class Signal:
 **目标**: 支持多进程并行回测（参数优化场景）
 
 **实现**:
+
 ```python
 from concurrent.futures import ProcessPoolExecutor
 
@@ -233,13 +246,13 @@ def parallel_backtest(
     n_jobs: int = -1
 ) -> pl.DataFrame:
     """并行回测多个参数组合"""
-    
+
     if n_jobs == -1:
         n_jobs = os.cpu_count() or 1
-    
+
     # 生成参数组合
     param_combinations = list(itertools.product(*param_grid.values()))
-    
+
     # 并行执行
     with ProcessPoolExecutor(max_workers=n_jobs) as executor:
         futures = []
@@ -253,7 +266,7 @@ def parallel_backtest(
                 config
             )
             futures.append((param_dict, future))
-        
+
         # 收集结果
         results = []
         for param_dict, future in futures:
@@ -262,7 +275,7 @@ def parallel_backtest(
                 results.append({**param_dict, **result.metrics})
             except Exception as e:
                 logger.error(f"回测失败: {param_dict}, {e}")
-        
+
     return pl.DataFrame(results)
 ```
 

@@ -3,6 +3,7 @@
 ## 问题背景
 
 当前 aquant 使用**信号-权重模式**：
+
 ```python
 class Strategy:
     def on_bar(self, context: Context) -> list[Signal]:
@@ -11,6 +12,7 @@ class Strategy:
 ```
 
 讨论：是否应该改为**主动下单模式**？
+
 ```python
 class Strategy:
     def on_bar(self, context: Context, order_manager: OrderManager) -> None:
@@ -25,11 +27,13 @@ class Strategy:
 ### 模式 1：信号-权重（当前）
 
 **特点**：
+
 - 策略只表达**意图**（"我想持有 20% 的某标的"）
 - 框架负责转换为**订单**（计算股数、分批买入）
 - 框架负责**调仓逻辑**（replace vs incremental 模式）
 
 **代码示例**：
+
 ```python
 class MomentumStrategy(Strategy):
     def on_bar(self, context: Context) -> list[Signal]:
@@ -44,6 +48,7 @@ class MomentumStrategy(Strategy):
 ```
 
 **优点**：
+
 1. ✅ **策略代码简洁**：不需要计算股数、不需要管理持仓差异
 2. ✅ **声明式编程**：表达"想要什么"，而非"如何做"
 3. ✅ **框架统一风控**：所有策略统一经过 Guard 检查
@@ -51,6 +56,7 @@ class MomentumStrategy(Strategy):
 5. ✅ **回测与实盘一致**：实盘时可用相同的权重计算逻辑
 
 **缺点**：
+
 1. ❌ **表达能力受限**：难以实现"止损后不再买入"、"分批建仓"
 2. ❌ **订单类型单一**：只支持市价单（开盘价成交）
 3. ❌ **无法精细控制**：不能指定"买入 1000 股"或"卖出 50%"
@@ -61,11 +67,13 @@ class MomentumStrategy(Strategy):
 ### 模式 2：主动下单
 
 **特点**：
+
 - 策略直接**发出订单**（"买入 1000 股"）
 - 策略负责**持仓管理**（自己跟踪仓位变化）
 - 框架只负责**执行和结算**
 
 **代码示例**：
+
 ```python
 class AdvancedStrategy(Strategy):
     def __init__(self):
@@ -97,12 +105,14 @@ class AdvancedStrategy(Strategy):
 ```
 
 **优点**：
+
 1. ✅ **表达能力强**：可实现任意复杂逻辑（止损、分批、条件单）
 2. ✅ **订单类型丰富**：限价单、止损单、市价单（需框架支持）
 3. ✅ **精细控制**：可指定精确股数、部分平仓
 4. ✅ **接近实盘**：真实交易就是下单模式
 
 **缺点**：
+
 1. ❌ **策略代码复杂**：需要自己计算股数、管理持仓差异
 2. ❌ **命令式编程**：关注"如何做"，而非"想要什么"
 3. ❌ **风控分散**：每个策略需自己实现相似的风控逻辑
@@ -115,6 +125,7 @@ class AdvancedStrategy(Strategy):
 ### 1. 代码复杂度
 
 **信号-权重模式**（简洁）：
+
 ```python
 # 15 行实现完整策略
 class SimpleStrategy(Strategy):
@@ -125,6 +136,7 @@ class SimpleStrategy(Strategy):
 ```
 
 **主动下单模式**（冗长）：
+
 ```python
 # 50+ 行实现相同逻辑
 class SimpleStrategy(Strategy):
@@ -172,6 +184,7 @@ class SimpleStrategy(Strategy):
 | 配对交易（多空对冲） | ⚠️ 可用负权重 | ✅ 更清晰 | 平手 |
 
 **结论**：
+
 - **选股类策略**（A 股主流）：信号-权重完胜
 - **复杂交易策略**（止损、分批、条件单）：主动下单必需
 
@@ -184,6 +197,7 @@ class SimpleStrategy(Strategy):
 **需求**：每月调仓，选出综合得分前 50 的股票，等权持有。
 
 **信号-权重实现**（10 行）：
+
 ```python
 class MultiFactorStrategy(Strategy):
     def on_bar(self, context: Context) -> list[Signal]:
@@ -196,6 +210,7 @@ class MultiFactorStrategy(Strategy):
 ```
 
 **主动下单实现**（40+ 行）：
+
 ```python
 class MultiFactorStrategy(Strategy):
     def on_bar(self, context: Context, order_manager: OrderManager) -> None:
@@ -236,17 +251,20 @@ class MultiFactorStrategy(Strategy):
 #### 案例 2：趋势追踪 + 止损策略
 
 **需求**：
+
 - 趋势向上时买入
 - 亏损 10% 止损，且后续不再买入该标的
 - 盈利 20% 止盈
 
 **信号-权重实现**（❌ 无法实现）：
+
 ```python
 # 无法表达"止损后不再买入"
 # 无法表达"止盈"（需要记录成本价，但 Context 只有 market_value）
 ```
 
 **主动下单实现**（✅ 可实现）：
+
 ```python
 class TrendFollowStrategy(Strategy):
     def __init__(self):
@@ -281,6 +299,7 @@ class TrendFollowStrategy(Strategy):
 ### 方案 A：双模式共存（推荐）
 
 **设计**：
+
 ```python
 class Strategy(ABC):
     mode: Literal["signal", "order"] = "signal"  # 默认信号模式
@@ -304,11 +323,13 @@ class Engine:
 ```
 
 **优点**：
+
 - ✅ 简单策略用信号模式（当前 90% 场景）
 - ✅ 复杂策略用下单模式（止损、分批、限价单）
 - ✅ 向后兼容（默认信号模式）
 
 **缺点**：
+
 - ⚠️ API 增加复杂度
 - ⚠️ 用户需要选择模式
 
@@ -360,12 +381,14 @@ Signal(
 ```
 
 **优点**：
+
 - ✅ 向后兼容（weight 仍然有效）
 - ✅ 表达能力增强（支持精确股数、限价单、止损单）
 - ✅ API 统一（只有一个 `on_bar`）
 - ✅ 保留声明式风格
 
 **缺点**：
+
 - ⚠️ 仍无法实现"止损后永不买入"（需要策略自己记录状态）
 
 ---
@@ -410,11 +433,13 @@ class TrendFollowStrategy(Strategy):
 ```
 
 **优点**：
+
 - ✅ 保留信号模式的简洁性
 - ✅ 通过事件订阅实现复杂状态管理
 - ✅ 充分利用已有的消息总线
 
 **缺点**：
+
 - ⚠️ 需要理解事件驱动编程
 - ⚠️ 调试稍复杂（异步逻辑）
 
@@ -425,11 +450,13 @@ class TrendFollowStrategy(Strategy):
 ### 短期（当前版本）：保持信号-权重模式
 
 **理由**：
+
 1. ✅ 覆盖 90% 的 A 股策略场景（选股、轮动、配置）
 2. ✅ 代码简洁，学习曲线平缓
 3. ✅ 与业界主流框架一致（Backtrader、Zipline 都是信号模式）
 
 **补充**：在文档中说明限制：
+
 - 适合选股类策略
 - 不适合止损/止盈等需要精细控制的策略
 - 高级需求可通过事件订阅 + 元数据实现
@@ -439,11 +466,13 @@ class TrendFollowStrategy(Strategy):
 ### 中期（1-2 月）：方案 B - 扩展 Signal 表达能力
 
 **实施**：
+
 1. 新增 `target_shares`、`order_type`、`tags` 字段
 2. 保持 `weight` 向后兼容
 3. 文档中提供"从权重到精确股数"的迁移指南
 
 **覆盖场景**：
+
 - ✅ 简单选股：`Signal(symbol, weight=0.2)`
 - ✅ 精确控制：`Signal(symbol, target_shares=1000)`
 - ✅ 限价单：`Signal(symbol, weight=0.1, order_type="limit", limit_price=10.5)`
@@ -454,11 +483,13 @@ class TrendFollowStrategy(Strategy):
 ### 长期（6 月+）：方案 A - 双模式共存
 
 **实施**：
+
 1. 保留信号模式作为默认
 2. 新增下单模式 `on_bar_order(context, order_manager)`
 3. 策略通过 `mode` 属性选择
 
 **适用场景**：
+
 - 信号模式：选股、轮动、配置（90%）
 - 下单模式：高频、做市、复杂止损/止盈（10%）
 
@@ -477,6 +508,7 @@ class TrendFollowStrategy(Strategy):
 | **实盘一致性** | ⭐⭐⭐⭐（高） | ⭐⭐⭐⭐⭐（完全） | 主动下单 |
 
 **最终建议**：
+
 1. **短期**：保持信号-权重模式（覆盖 90% 场景）
 2. **中期**：扩展 Signal 表达能力（支持 target_shares、order_type）
 3. **长期**：双模式共存（让用户选择）

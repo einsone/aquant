@@ -328,7 +328,7 @@ class RiskRule(ABC):
 
 #### 内置风控规则
 
-**MaxPositionSizeRule**
+##### MaxPositionSizeRule
 
 单标的权重上限。
 
@@ -343,7 +343,7 @@ class MaxPositionSizeRule(RiskRule):
         """
 ```
 
-**MaxDrawdownRule**
+##### MaxDrawdownRule
 
 最大回撤限制。
 
@@ -358,7 +358,7 @@ class MaxDrawdownRule(RiskRule):
         """
 ```
 
-**MaxLeverageRule**
+##### MaxLeverageRule
 
 杠杆率跟踪。
 
@@ -373,7 +373,7 @@ class MaxLeverageRule(RiskRule):
         """
 ```
 
-**ConcentrationRule**
+##### ConcentrationRule
 
 集中度限制。
 
@@ -561,7 +561,7 @@ class TradingRules(ABC):
 
 #### 内置交易规则
 
-**StockRules**
+##### StockRules
 
 A 股交易规则（T+1）。
 
@@ -588,7 +588,7 @@ class StockRules(TradingRules):
         """
 ```
 
-**FuturesRules**
+##### FuturesRules
 
 期货交易规则（T+0）。
 

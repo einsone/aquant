@@ -11,6 +11,7 @@
 ### 1. 移除 BigQuant 依赖 ✅
 
 **清理内容**：
+
 - ✅ 从 `pyproject.toml` 移除 `bigquantdai>=1.0.9` 依赖
 - ✅ 标记 `BigQuantDataSource` 为 deprecated
   - 添加 `DeprecationWarning`
@@ -23,6 +24,7 @@
   - `ty.toml`: 忽略 bigquant 模块导入错误
 
 **迁移指南**：
+
 ```python
 # 旧代码
 from aquant.data.bigquant import BigQuantDataSource
@@ -38,11 +40,13 @@ data_source = ALDSDataSource()
 ### 2. 完善 ALDS 数据源 ⏳
 
 **当前状态**：
+
 - ✅ 基础功能实现完成
 - ✅ `load_adjustments()` 和 `load_delisted()` 接口已添加
 - ⏳ 实际逻辑待补充（返回空列表/字典）
 
 **后续工作**：
+
 - 实现复权数据查询逻辑
 - 实现退市数据查询逻辑
 
@@ -51,10 +55,12 @@ data_source = ALDSDataSource()
 ### 3. Markdown 格式修复 ⏳
 
 **当前状态**：
+
 - ⚠️ 旧文档存在 markdownlint 警告
 - ⚠️ 不影响功能，仅为格式问题
 
 **待修复文件**：
+
 - `REFACTOR_SUMMARY.md`
 - `ARCHITECTURE_OPTIMIZATION.md`
 - `SIGNAL_VS_ORDER_MODE.md`
@@ -69,12 +75,14 @@ data_source = ALDSDataSource()
 **优化位置**: `aquant/data/csv.py`
 
 **优化前**：
+
 ```python
 for row in df_filtered.iter_rows(named=True):
     result[row["symbol"]] = DayBar(...)
 ```
 
 **优化后**：
+
 ```python
 # 一次性提取所有列
 symbols_list = df_filtered.get_column("symbol").to_list()
@@ -99,6 +107,7 @@ for i, sym in enumerate(symbols_list):
 **优化位置**: `aquant/core/engine.py`
 
 **优化前**：
+
 ```python
 def _build_context(self, dt: date) -> Context:
     # 每次创建新的 QueryService
@@ -107,6 +116,7 @@ def _build_context(self, dt: date) -> Context:
 ```
 
 **优化后**：
+
 ```python
 def __init__(self, ...):
     # 初始化时创建单例
@@ -126,20 +136,22 @@ def _build_context(self, dt: date) -> Context:
 **新增模块**: `aquant/data/preloader.py`
 
 **功能**：
+
 ```python
 class DataPreloader:
     """批量预加载多天数据并缓存"""
-    
+
     def __init__(self, data_source, trading_days, symbols, batch_size=50):
         # 批量预加载所有交易日数据
         self._preload(trading_days, symbols)
-    
+
     def get_bars(self, dt: date) -> dict[str, DayBar]:
         # 从缓存获取
         return self._cache.get(dt, {})
 ```
 
 **适用场景**：
+
 - ✅ 固定股票池策略
 - ✅ 参数优化（多次回测同一数据集）
 - ⚠️ 动态选股策略需要额外处理
@@ -159,7 +171,8 @@ class DataPreloader:
 | 100    | 89   | 0.15s | 1.69ms | 59,290 bars/s |
 | 100    | 250  | 0.39s | 1.56ms | 64,691 bars/s |
 
-**说明**: 
+**说明**:
+
 - 由于测试数据随机性，性能存在波动
 - 需要在固定数据集上多次测试才能准确评估
 - 当前优化主要减少了内存分配和对象创建开销
@@ -169,12 +182,14 @@ class DataPreloader:
 ## 📁 新增/修改文件清单
 
 ### 新增文件
+
 - ✅ `PERFORMANCE_OPTIMIZATION.md` - 性能优化分析文档
 - ✅ `COMPLETION_SUMMARY.md` - 任务完成总结（中期）
 - ✅ `aquant/data/preloader.py` - 数据预加载器
 - ✅ `FINAL_SUMMARY.md` - 本文档
 
 ### 修改文件
+
 - ✅ `pyproject.toml` - 移除 BigQuant 依赖
 - ✅ `ty.toml` - 配置类型检查忽略规则
 - ✅ `aquant/data/bigquant.py` - 标记为 deprecated
@@ -190,7 +205,7 @@ class DataPreloader:
 
 ### 检查结果
 
-```
+```text
 ✅ 类型检查 (ty): 通过
 ✅ 代码格式 (ruff format): 通过
 ✅ 代码规范 (ruff check): 通过
@@ -205,7 +220,7 @@ class DataPreloader:
 1. **修复类型错误并完成优先级任务实现** (6b4992e)
    - 修正示例策略 API 使用
    - 新增 3 个策略示例 + 教程
-   
+
 2. **完善数据源并完成性能基准测试** (78a09e0)
    - 添加数据源抽象方法实现
    - 运行性能基准测试
@@ -241,16 +256,16 @@ class DataPreloader:
 
 ### 中期规划（需投入）
 
-4. **ALDS 数据源完善**
+1. **ALDS 数据源完善**
    - 实现复权数据查询
    - 实现退市数据查询
    - 添加数据验证
 
-5. **并行回测支持**
+2. **并行回测支持**
    - 实现多进程参数优化
    - 支持分布式回测
 
-6. **更多数据源**
+3. **更多数据源**
    - 数据库数据源（PostgreSQL/DuckDB）
    - Parquet 格式支持
    - 实时数据源接口
@@ -262,11 +277,13 @@ class DataPreloader:
 ### 已完成任务
 
 **选项 A（清理与完善）**:
+
 - ✅ BigQuant 依赖清理
 - ⏳ ALDS 数据源完善（部分）
 - ⏳ Markdown 格式修复（待做）
 
 **选项 C（性能优化）**:
+
 - ✅ Polars 向量化处理
 - ✅ Context 对象池
 - ✅ 数据预加载器实现
@@ -283,12 +300,14 @@ class DataPreloader:
 ### 准备度
 
 **✅ 项目已准备好**：
+
 - 用于生产环境的策略开发
 - 中小规模回测（100 股以内）
 - 参数优化和策略对比
 - 风控和绩效分析
 
 **⏳ 后续可增强**：
+
 - 大规模回测支持（500+ 股）
 - 实盘交易对接
 - 分布式回测

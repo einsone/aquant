@@ -9,16 +9,19 @@
 #### 1.1 新增策略示例（3个）
 
 **examples/dual_moving_average.py** - 双均线策略
+
 - 经典的双均线交叉策略
 - 适合入门学习
 - 展示基础策略编写方法
 
 **examples/bollinger_bands.py** - 布林带策略
+
 - 均值回归策略
 - 展示统计指标使用
 - 超买超卖判断
 
 **examples/risk_controlled_momentum.py** - 带风控的动量策略
+
 - 展示 RiskManager 使用
 - 展示 QueryService 使用（查询回撤）
 - 多种风控规则组合
@@ -26,6 +29,7 @@
 #### 1.2 完整教程文档
 
 **docs/tutorial.md** - 端到端回测教程
+
 - 10 个步骤完整流程
 - 从数据准备到报告生成
 - 包含参数优化、风控使用等高级内容
@@ -34,11 +38,13 @@
 ### ✅ 优先级 2：性能优化
 
 **examples/benchmark.py** - 性能测试脚本
+
 - 测试不同数据规模下的性能
 - 输出详细的性能指标
 - 吞吐量统计
 
 测试场景：
+
 - 10 只股票 × 100 天
 - 50 只股票 × 100 天
 - 100 只股票 × 100 天
@@ -49,6 +55,7 @@
 #### 3.1 ALDS 数据源（默认）
 
 **aquant/data/alds.py** - ALDS 数据源实现
+
 - 替换 BigQuant 作为默认数据源
 - 支持 A 股本地数据
 - 按年缓存提升性能
@@ -56,11 +63,13 @@
 #### 3.2 CSV 数据源（通用）
 
 **aquant/data/csv.py** - CSV 文件数据源
+
 - 最通用的数据格式
 - 支持自定义数据
 - 包含测试数据生成工具
 
 **CSV 格式**：
+
 ```csv
 symbol,date,open,high,low,close,volume,up_limit,down_limit,is_halted
 000001.SZ,2024-01-02,10.0,10.5,9.8,10.2,1000000,11.0,9.0,False
@@ -68,7 +77,8 @@ symbol,date,open,high,low,close,volume,up_limit,down_limit,is_halted
 
 #### 3.3 数据源模块更新
 
-**aquant/data/__init__.py** - 导出新数据源
+**aquant/data/**init**.py** - 导出新数据源
+
 - ALDSDataSource
 - CSVDataSource
 
@@ -90,25 +100,31 @@ symbol,date,open,high,low,close,volume,up_limit,down_limit,is_halted
 
 ### 新增文件（9个）
 
-**数据源（2个）**
+#### 数据源（2个）
+
 - aquant/data/alds.py
 - aquant/data/csv.py
 
-**策略示例（3个）**
+#### 策略示例（3个）
+
 - examples/dual_moving_average.py
 - examples/bollinger_bands.py
 - examples/risk_controlled_momentum.py
 
-**文档（1个）**
+#### 文档（1个）
+
 - docs/tutorial.md
 
-**工具（1个）**
+#### 工具（1个）
+
 - examples/benchmark.py
 
-**修改文件（1个）**
-- aquant/data/__init__.py
+#### 修改文件（1个）
+
+- aquant/data/**init**.py
 
 ### 原有文档（4个）
+
 - docs/quickstart.md
 - docs/architecture.md
 - docs/api_reference.md

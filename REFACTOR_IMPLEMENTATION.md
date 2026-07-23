@@ -1,6 +1,7 @@
 # Aquant 架构重构实施总结
 
 ## 执行时间
+
 2026-07-22
 
 ## 已完成的重构
@@ -33,6 +34,7 @@ class MyStrategy(Strategy):
 ```
 
 **提供的查询接口**：
+
 - `get_nav_curve()` - 查询净值曲线
 - `get_recent_trades()` - 查询最近成交
 - `get_trades_by_date_range()` - 查询指定区间成交
@@ -42,6 +44,7 @@ class MyStrategy(Strategy):
 - `get_total_pnl()` - 计算累计盈亏
 
 **价值**：
+
 - ✅ 策略能力提升 50%（支持基于历史数据的复杂决策）
 - ✅ 实现了 CQRS 模式（命令查询职责分离）
 - ✅ 向后兼容（Context 增加 query 字段）
@@ -70,16 +73,19 @@ engine = Engine(strategy, data_source, config, risk_manager=risk_manager)
 ```
 
 **内置风控规则**：
+
 1. `MaxPositionSizeRule` - 单标的持仓上限
 2. `MaxDrawdownRule` - 最大回撤限制（超限停止买入）
 3. `MaxLeverageRule` - 杠杆率限制
 4. `ConcentrationRule` - 集中度限制（前 N 大持仓）
 
 **可扩展**：
+
 - 用户可继承 `RiskRule` 实现自定义风控
 - 运行时可通过 `risk_manager.add_rule()` 添加规则
 
 **价值**：
+
 - ✅ 真实交易必备功能
 - ✅ 防止策略失控
 - ✅ 可插拔设计，易于扩展
@@ -115,11 +121,13 @@ matcher = Matcher(cost_model, trading_rules=stock_rules)
 ```
 
 **状态**：
+
 - ✅ 抽象类和实现已完成
 - ⚠️ 与 Matcher 的集成部分完成（已添加参数，但未完全替换 CostModel）
 - 📋 **建议**：保留为可选功能，文档中说明如何扩展
 
 **价值**：
+
 - ✅ 支持多品种（股票、期货、期权）
 - ✅ 可扩展（用户自定义交易规则）
 - ⚠️ 需要进一步集成才能完全启用
@@ -129,15 +137,19 @@ matcher = Matcher(cost_model, trading_rules=stock_rules)
 ## 测试结果
 
 ### ✅ 代码质量检查
+
 ```bash
 prek run --all-files
 ```
+
 - ✅ 所有检查通过（ruff, ruff format, ty）
 
 ### ✅ 功能测试
+
 ```bash
 uv run python examples/demo.py
 ```
+
 - ✅ 单次回测正常
 - ✅ 网格搜索正常
 - ✅ 输出结果与重构前一致
@@ -166,14 +178,16 @@ uv run python examples/demo.py
 ## 架构提升
 
 ### 重构前
-```
+
+```text
 Strategy → Engine → Portfolio/Matcher
            ↓
     直接访问有限状态
 ```
 
 ### 重构后
-```
+
+```text
 Strategy → Context.query → 查询历史数据
      ↓
    Engine → RiskManager → 组合级风控
@@ -255,15 +269,18 @@ result = engine.run()
 ## 性能影响
 
 ### Query Service
+
 - **开销**：每次查询需要遍历历史记录
 - **优化**：历史记录已在内存中，查询速度快
 - **影响**：< 1%（仅当策略主动查询时）
 
 ### RiskManager
+
 - **开销**：每批信号多一次过滤
 - **影响**：< 1%（规则检查是简单的条件判断）
 
 ### TradingRules
+
 - **开销**：无（默认使用 StockRules，逻辑与原 CostModel 相同）
 
 ---
@@ -273,6 +290,7 @@ result = engine.run()
 ✅ **100% 向后兼容**
 
 ### 现有代码无需修改
+
 ```python
 # 这些代码仍然正常工作
 engine = Engine(strategy, data_source, config)  # 不传 risk_manager
@@ -280,6 +298,7 @@ result = engine.run()
 ```
 
 ### 新功能通过可选参数提供
+
 ```python
 # 使用新功能
 engine = Engine(
@@ -297,11 +316,13 @@ engine = Engine(
 ### 1. TradingRules 完整集成（优先级 P2）
 
 **当前状态**：
+
 - ✅ 抽象类和实现完成
 - ⚠️ Matcher 部分集成（参数已添加）
 - ❌ 未完全替换 CostModel
 
 **建议**：
+
 - 保留为可选功能
 - 在文档中说明如何扩展
 - 未来需要多品种支持时再完整集成
@@ -323,16 +344,19 @@ engine = Engine(
 ## 后续建议
 
 ### 短期（1 周）
+
 1. ✅ 完成文档更新（Query Service、RiskManager 使用指南）
-2. ✅ 添加单元测试（query.py、risk/__init__.py）
+2. ✅ 添加单元测试（query.py、risk/**init**.py）
 3. ✅ 更新 README 示例
 
 ### 中期（1 月）
+
 1. 完成 TradingRules 的完整集成
 2. 添加更多内置风控规则（最大单日亏损、最大连续亏损天数）
 3. 实现性能追踪工具
 
 ### 长期（3-6 月）
+
 1. 事件溯源（Event Sourcing）
 2. 实时交易支持（Live Engine）
 3. 分布式回测

@@ -60,11 +60,7 @@ class SimpleMovingAverageStrategy(Strategy):
 def main():
     """运行带预加载的回测。"""
     # 配置回测
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 12, 31),
-        initial_capital=1_000_000.0,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 12, 31), initial_capital=1_000_000.0)
 
     # 创建数据源
     data_source = ALDSDataSource()
@@ -74,12 +70,7 @@ def main():
 
     # 创建预加载器（一次性加载所有数据）
     print("预加载数据中...")
-    preloader = DataPreloader(
-        data_source=data_source,
-        trading_days=trading_days,
-        symbols=set(UNIVERSE),
-        batch_size=50,
-    )
+    preloader = DataPreloader(data_source=data_source, trading_days=trading_days, symbols=set(UNIVERSE), batch_size=50)
     print(f"预加载完成，缓存大小: {preloader._estimate_cache_size():.2f} MB")
 
     # 创建策略（传入预加载器）

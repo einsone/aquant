@@ -145,6 +145,7 @@ def on_bar(self, context: Context) -> list[Signal]:
 ```
 
 优点：
+
 - ✅ 简洁：策略代码更短，专注于信号逻辑
 - ✅ 安全：框架自动处理现金管理和持仓调整
 - ✅ 一致：所有策略使用统一接口
@@ -153,7 +154,7 @@ def on_bar(self, context: Context) -> list[Signal]:
 
 回测按照固定的事件顺序执行：
 
-```
+```text
 DAY_START → SIGNAL → MATCH → DAY_END
 ```
 

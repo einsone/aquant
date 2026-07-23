@@ -107,7 +107,6 @@ print(f"总收益率: {result.metrics['total_return']:.2%}")
 print(f"夏普比率: {result.metrics['sharpe']:.2f}")
 print(f"最大回撤: {result.metrics['max_drawdown']:.2%}")
 ```
-```
 
 ## 📖 文档
 
@@ -165,19 +164,24 @@ engine = Engine(strategy, data_source, config, risk_manager=risk_manager)
 
 框架提供完整的绩效指标：
 
-**收益指标**
+### 收益指标
+
 - 累计收益率、年化收益率
 
-**风险指标**
+### 风险指标
+
 - 年化波动率、最大回撤
 
-**风险调整收益**
+### 风险调整收益
+
 - 夏普比率、卡玛比率
 
-**交易统计**
+### 交易统计
+
 - 胜率、盈亏比、换手率
 
 **相对指标**（需提供基准）
+
 - Alpha、Beta、信息比率
 
 ## 🔧 高级特性
@@ -233,6 +237,7 @@ uv run pytest tests/test_risk.py -v
 ```
 
 **测试覆盖**：
+
 - ✅ 61 个单元测试
 - ✅ 100% 核心模块覆盖
 - ✅ 所有新功能都有测试
@@ -254,7 +259,7 @@ prek run --all-files
 
 ### 项目结构
 
-```
+```text
 aquant/
 ├── core/           # 核心引擎
 ├── strategy/       # 策略基类

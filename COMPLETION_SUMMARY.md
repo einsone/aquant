@@ -3,6 +3,7 @@
 ## 🎯 任务目标
 
 实现优先级 1、2、3：
+
 1. **实战验证与示例扩展**
 2. **性能优化**
 3. **数据源扩展**（删除 BigQuant，使用 ALDS 作为默认数据源）
@@ -16,16 +17,19 @@
 #### 策略示例（3 个）
 
 **a. 双均线策略** (`examples/dual_moving_average.py`)
+
 - 经典的趋势跟踪策略
 - 展示基础策略结构、价格历史追踪、信号生成
 - 适合入门学习
 
 **b. 布林带策略** (`examples/bollinger_bands.py`)
+
 - 均值回归策略
 - 展示统计计算、超买超卖判断
 - 中级难度示例
 
 **c. 带风控的动量策略** (`examples/risk_controlled_momentum.py`)
+
 - 完整的实战级策略
 - 展示 RiskManager 使用、QueryService 历史数据查询、多重风控规则
 - 高级示例
@@ -33,6 +37,7 @@
 #### 端到端教程
 
 **完整教程文档** (`docs/tutorial.md`)
+
 - 10 步完整流程：从数据准备到报告生成
 - 包含参数优化示例
 - 风控使用指南
@@ -46,6 +51,7 @@
 #### 性能测试工具
 
 **基准测试脚本** (`examples/benchmark.py`)
+
 - 测试不同数据规模下的性能
 - 输出吞吐量、耗时等关键指标
 
@@ -59,6 +65,7 @@
 | 100    | 250  | 0.36     | 1.46          | 68,555         |
 
 **性能特点**：
+
 - ✅ 随着股票数增加，吞吐量显著提升（批处理效率高）
 - ✅ 100 股票 × 250 天场景：平均每天仅需 1.46 毫秒
 - ✅ 最高吞吐量达 68,555 bars/秒
@@ -73,12 +80,14 @@
 **实现文件**: `aquant/data/alds.py`
 
 **特性**：
+
 - ✅ 基于本地 A 股数据系统（ALDS）
 - ✅ 按年缓存数据，提升性能
 - ✅ 自动加载交易日历
 - ✅ 支持复权和退市数据接口（TODO 实现）
 
 **使用示例**：
+
 ```python
 from aquant.data.alds import ALDSDataSource
 
@@ -91,12 +100,14 @@ bars = data_source.load_bars(date(2024, 1, 2), {"000001.SZ", "600000.SH"})
 **实现文件**: `aquant/data/csv.py`
 
 **特性**：
+
 - ✅ 最通用的文件格式支持
 - ✅ 从目录中的日期命名文件读取（YYYYMMDD.csv）
 - ✅ 自动推断交易日历
 - ✅ 包含测试数据生成工具 `create_sample_csv()`
 
 **使用示例**：
+
 ```python
 from aquant.data.csv import CSVDataSource, create_sample_csv
 
@@ -150,7 +161,7 @@ data_source = CSVDataSource(data_dir="./data/daily")
 
 ### 测试覆盖
 
-```
+```text
 ✅ 61 个单元测试
 ✅ 核心模块测试
 ✅ 数据管理测试
@@ -160,7 +171,7 @@ data_source = CSVDataSource(data_dir="./data/daily")
 
 ### 代码检查
 
-```
+```text
 ✅ trim trailing whitespace
 ✅ fix end of files
 ✅ check for merge conflicts
@@ -175,7 +186,7 @@ data_source = CSVDataSource(data_dir="./data/daily")
 
 ### 性能指标
 
-```
+```text
 ✅ 吞吐量: 68,555 bars/秒（最高）
 ✅ 延迟: 1.46 毫秒/天（平均）
 ✅ 适用规模: 100 股 × 250 天
@@ -186,21 +197,25 @@ data_source = CSVDataSource(data_dir="./data/daily")
 ## 📁 新增文件清单
 
 ### 数据源
+
 - `aquant/data/alds.py` - ALDS 数据源实现
 - `aquant/data/csv.py` - CSV 数据源实现
 
 ### 示例代码
+
 - `examples/dual_moving_average.py` - 双均线策略
 - `examples/bollinger_bands.py` - 布林带策略
 - `examples/risk_controlled_momentum.py` - 风控动量策略
 - `examples/benchmark.py` - 性能测试工具
 
 ### 文档
+
 - `docs/tutorial.md` - 端到端教程
 - `TASK_COMPLETION_REPORT.md` - 任务完成报告（中期）
 - `COMPLETION_SUMMARY.md` - 本文档
 
 ### 测试数据
+
 - `data/benchmark/*.csv` - 270 个测试数据文件（性能测试用）
 
 ---
@@ -224,17 +239,17 @@ data_source = CSVDataSource(data_dir="./data/daily")
 
 ### 中期优化
 
-4. **性能进一步优化**
+1. **性能进一步优化**
    - 实现数据预加载
    - 优化内存使用
    - 添加并行处理支持
 
-5. **更多数据源支持**
+2. **更多数据源支持**
    - 数据库数据源（PostgreSQL/MySQL）
    - API 数据源（REST/WebSocket）
    - Parquet 文件格式支持
 
-6. **实战功能增强**
+3. **实战功能增强**
    - 实盘交易接口
    - 风险监控仪表盘
    - 策略性能归因分析
@@ -264,6 +279,7 @@ data_source = CSVDataSource(data_dir="./data/daily")
 - ✅ **优先级 3**：ALDS + CSV 数据源，BigQuant 已替代
 
 项目现在具备：
+
 - 完整的数据源抽象层
 - 丰富的实战示例
 - 可靠的性能基准

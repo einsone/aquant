@@ -3,6 +3,7 @@
 ## 问题背景
 
 当前 aquant 是**同步架构**：
+
 ```python
 class Engine:
     def run(self) -> BacktestResult:
@@ -14,6 +15,7 @@ class Engine:
 ```
 
 讨论：是否需要改为**异步架构**？
+
 ```python
 class Engine:
     async def run(self) -> BacktestResult:
@@ -31,12 +33,14 @@ class Engine:
 ### 异步的本质：I/O 等待时让出 CPU
 
 **异步适用场景**：
+
 1. ✅ **网络请求**：API 调用、数据下载
 2. ✅ **文件 I/O**：大文件读写
 3. ✅ **数据库查询**：远程数据库访问
 4. ✅ **并发任务**：多个独立任务同时执行
 
 **异步不适用场景**：
+
 1. ❌ **CPU 密集计算**：策略计算、指标计算（没有 I/O 等待）
 2. ❌ **内存操作**：持仓更新、现金结算（纯内存，无等待）
 3. ❌ **顺序依赖**：事件必须按时间顺序处理（无并发空间）
@@ -91,11 +95,13 @@ def load_bars(self, dt: date, symbols: set[str]) -> dict[str, DayBar]:
 ```
 
 **当前**：
+
 - 数据已预加载到内存（`_year_cache`）
 - 查询是内存操作（Polars DataFrame 过滤）
 - **无网络 I/O 等待**
 
 **如果改为实时查询**：
+
 ```python
 async def load_bars(self, dt: date, symbols: set[str]) -> dict[str, DayBar]:
     # 每次都从 BigQuant API 查询
@@ -113,6 +119,7 @@ async def load_bars(self, dt: date, symbols: set[str]) -> dict[str, DayBar]:
 ### 1. 代码复杂度暴增
 
 **同步代码**（简洁）：
+
 ```python
 class Strategy:
     def on_bar(self, context: Context) -> list[Signal]:
@@ -125,6 +132,7 @@ def _load_data(self, dt: date) -> pl.DataFrame:
 ```
 
 **异步代码**（复杂）：
+
 ```python
 class Strategy:
     async def on_bar(self, context: Context) -> list[Signal]:
@@ -138,6 +146,7 @@ async def _load_data(self, dt: date) -> pl.DataFrame:
 ```
 
 **问题**：
+
 1. 所有函数都要加 `async/await`（传染性）
 2. 同步库需要包装（Polars、NumPy 等不支持 async）
 3. 调试困难（堆栈信息复杂）
@@ -148,14 +157,16 @@ async def _load_data(self, dt: date) -> pl.DataFrame:
 ### 2. 性能未必提升
 
 **同步性能测试**（aquant 当前）：
-```
+
+```text
 回测 519 个交易日，1652 笔交易
 耗时：0.15 秒
 平均每日：0.29 毫秒
 ```
 
 **异步性能测试**（假设）：
-```
+
+```text
 回测 519 个交易日，1652 笔交易
 耗时：0.18 秒（增加了 20%）
 原因：
@@ -198,6 +209,7 @@ async def _submit_order(self, order: Order):
 ```
 
 **为什么需要异步**：
+
 - ✅ 多个 WebSocket 连接并发监听
 - ✅ 下单 API 调用有网络延迟
 - ✅ 不能阻塞行情接收
@@ -215,11 +227,13 @@ async def backtest_multiple_strategies(strategies: list[Strategy]):
 ```
 
 **问题**：
+
 - ⚠️ 策略计算是 CPU 密集，不是 I/O 密集
 - ⚠️ 异步无法利用多核（受 GIL 限制）
 - ✅ 用 `multiprocessing` 更好（真正的并行）
 
 **更好的方案**（当前已支持）：
+
 ```python
 def grid_search(strategy_cls, param_grid, config, data_source, n_jobs=4):
     # 用进程池并行回测
@@ -255,10 +269,12 @@ class Engine:
 ```
 
 **收益**：
+
 - ✅ 网络请求可并发
 - ✅ 等待 API 响应时可处理其他事件
 
 **但回测不需要**：
+
 - ❌ 回测数据已预加载到内存
 - ❌ 无网络请求
 
@@ -269,17 +285,20 @@ class Engine:
 ### 方案 A：保持同步（当前，推荐）
 
 **适用场景**：
+
 - ✅ 回测（数据在内存）
 - ✅ 单策略顺序执行
 - ✅ CPU 密集计算
 
 **优点**：
+
 1. ✅ 代码简洁易懂
 2. ✅ 调试方便
 3. ✅ 性能最优（无事件循环开销）
 4. ✅ 与同步库兼容（Polars、NumPy、Pandas）
 
 **缺点**：
+
 1. ❌ 无法并发 I/O
 2. ❌ 实时交易需要重写
 
@@ -288,14 +307,17 @@ class Engine:
 ### 方案 B：全异步（不推荐）
 
 **适用场景**：
+
 - ⚠️ 实时交易（但回测不需要）
 - ❌ 回测（反而更慢）
 
 **优点**：
+
 1. ✅ 支持并发 I/O
 2. ✅ 实时交易与回测统一架构
 
 **缺点**：
+
 1. ❌ 代码复杂度暴增（3-5 倍）
 2. ❌ 调试困难
 3. ❌ 回测性能下降 20%
@@ -331,11 +353,13 @@ class Strategy:
 ```
 
 **优点**：
+
 1. ✅ 回测保持简洁高效
 2. ✅ 实时交易支持异步 I/O
 3. ✅ 策略代码通用（同步）
 
 **实现**：
+
 ```python
 class LiveEngine:
     async def _run_strategy(self):
@@ -381,11 +405,13 @@ class DataEngine:
 ```
 
 **核心需求**：
+
 1. ✅ 同时监听多个交易所 WebSocket（并发 I/O）
 2. ✅ 下单 API 调用不阻塞行情接收（I/O 等待）
 3. ✅ 支持高频交易（毫秒级延迟）
 
 **Aquant 的需求**：
+
 1. ❌ 只有回测，无实时 WebSocket
 2. ❌ 数据已预加载，无网络请求
 3. ❌ 日级回测，对延迟不敏感
@@ -395,11 +421,13 @@ class DataEngine:
 ## 性能测试（真实数据）
 
 ### 测试场景
+
 - 519 个交易日
 - 20 只股票
 - 简单动量策略
 
 ### 同步实现（当前）
+
 ```python
 def run(self) -> BacktestResult:
     for event in self._queue:
@@ -410,6 +438,7 @@ def run(self) -> BacktestResult:
 ```
 
 ### 异步实现（模拟）
+
 ```python
 async def run(self) -> BacktestResult:
     for event in self._queue:
@@ -424,6 +453,7 @@ async def run(self) -> BacktestResult:
 ```
 
 ### 多进程实现（grid_search）
+
 ```python
 with ProcessPoolExecutor(max_workers=4) as executor:
     results = executor.map(run_backtest, param_combinations)
@@ -432,6 +462,7 @@ with ProcessPoolExecutor(max_workers=4) as executor:
 ```
 
 **结论**：
+
 - 回测用异步：❌ 性能下降 20%
 - 回测用多进程：✅ 性能提升 4 倍
 
@@ -448,6 +479,7 @@ with ProcessPoolExecutor(max_workers=4) as executor:
 | **Aquant** | 同步 | 纯回测框架，与主流一致 |
 
 **规律**：
+
 - 纯回测框架：同步
 - 实时交易框架：异步
 
@@ -458,12 +490,14 @@ with ProcessPoolExecutor(max_workers=4) as executor:
 ### 短期（当前版本）：保持同步 ✅
 
 **理由**：
+
 1. ✅ 回测无 I/O 等待，异步无收益
 2. ✅ 代码简洁，性能最优
 3. ✅ 与主流回测框架一致
 4. ✅ 用户学习成本低
 
 **优化方向**：
+
 - 多进程并行（grid_search 已支持）
 - 数据预加载（BigQuantDataSource 已实现）
 
@@ -491,6 +525,7 @@ class Strategy:
 ```
 
 **实施**：
+
 1. 新增 `aquant.live` 模块（异步）
 2. 回测模块保持同步
 3. 策略代码通用
@@ -500,12 +535,14 @@ class Strategy:
 ### 长期（1-2 年）：按需异步
 
 **原则**：
+
 - 回测：永远同步（性能最优）
 - 实时交易：异步（必需）
 - 策略计算：同步（CPU 密集）
 - 网络请求：异步（I/O 密集）
 
 **参考 VnPy 的设计**：
+
 ```python
 # 回测引擎（同步）
 class BacktestEngine:
@@ -542,6 +579,7 @@ class CtaEngine(BaseEngine):
 ### ❌ 不需要将回测改为异步
 
 **原因**：
+
 1. 回测无 I/O 等待，异步无收益
 2. 代码复杂度增加 3-5 倍
 3. 性能反而下降 20%
@@ -550,6 +588,7 @@ class CtaEngine(BaseEngine):
 ### ✅ 未来支持实时交易时再引入异步
 
 **架构**：
+
 - 回测引擎：同步（保持现状）
 - 实时引擎：异步（新增模块）
 - 策略代码：同步（两者通用）
@@ -557,6 +596,7 @@ class CtaEngine(BaseEngine):
 ### 📊 当前最优方案
 
 **并行回测**：用多进程而非异步
+
 ```python
 # 已支持
 grid_search(strategy_cls, param_grid, config, data_source, n_jobs=4)
@@ -564,6 +604,7 @@ grid_search(strategy_cls, param_grid, config, data_source, n_jobs=4)
 ```
 
 **数据预加载**：避免实时查询
+
 ```python
 # BigQuantDataSource 已实现
 self._year_cache[year] = df  # 整年预加载到内存

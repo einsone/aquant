@@ -3,6 +3,7 @@
 ## 当前架构分析
 
 ### 优点
+
 1. **事件驱动核心清晰**：`EventQueue` + `Phase` 枚举实现了良好的事件循环
 2. **职责分离明确**：
    - `DataSource` 抽象接口与具体实现分离
@@ -39,21 +40,25 @@
 ## 重构目标
 
 ### 1. 引入消息总线（借鉴 NautilusTrader）
+
 - 所有组件通过消息总线通信
 - 事件发布-订阅模式解耦
 - 便于添加监听器和插件
 
 ### 2. 分层数据访问（借鉴 VnPy）
+
 - **接口层**：`DataSource` 保持不变
 - **管理层**：新增 `DataManager` 协调缓存、预加载、多源聚合
 - **缓存层**：统一缓存策略（LRU、TTL）
 
 ### 3. 可配置的撮合引擎
+
 - `Guard` 可插拔配置
 - 支持自定义订单类型
 - 支持优先级队列
 
 ### 4. 事件系统增强
+
 - 从 "控制流事件" 升级为 "业务事件"
 - 支持更多事件类型（订单提交、成交、持仓变动等）
 - 事件携带完整上下文
@@ -215,6 +220,7 @@ class Engine:
 ```
 
 **优势**：
+
 - 策略可以订阅订单成交、持仓变动等事件
 - 第三方监听器（日志、监控、通知）无需修改核心代码
 - 未来支持实时交易时，只需将事件发布到外部系统
@@ -277,6 +283,7 @@ class DataManager:
 ```
 
 **优势**：
+
 - `BigQuantDataSource` 的 `_year_cache` 可以移除，由 `DataManager` 统一管理
 - 未来支持多数据源聚合（主数据源 + 备用数据源）
 - 支持不同缓存策略（LRU、FIFO、TTL）
@@ -360,6 +367,7 @@ class Matcher:
 ```
 
 **优势**：
+
 - 用户可以自定义 `Guard`（例如风控、止损）
 - 测试时可以注入 Mock Guard
 
@@ -410,18 +418,21 @@ class EventDrivenStrategy(Strategy):
 ## 总体架构对比
 
 ### 重构前
-```
+
+```text
 Engine (上帝对象)
   ├── Strategy (直接调用)
   ├── DataSource (直接查询)
   ├── Portfolio (直接修改)
   └── Matcher (直接执行)
 ```
+
 - **紧耦合**：组件间直接方法调用
 - **难扩展**：添加新功能需要修改 `Engine`
 
 ### 重构后
-```
+
+```text
 MessageBus (中央通信枢纽)
   ├── Engine (发布/订阅事件)
   ├── Strategy (订阅事件 + 发布信号)
@@ -430,6 +441,7 @@ MessageBus (中央通信枢纽)
   ├── Portfolio (发布持仓变动事件)
   └── Matcher (发布成交事件)
 ```
+
 - **松耦合**：组件通过消息总线通信
 - **易扩展**：新增监听器无需修改现有代码
 
@@ -438,30 +450,35 @@ MessageBus (中央通信枢纽)
 ## 实施计划
 
 ### 优先级 P0（必须做）
+
 1. ✅ 引入 `MessageBus`（`aquant/events/bus.py`）
-2. ✅ 扩展事件类型（`OrderFilledEvent` 等）
-3. ✅ `Engine` 集成消息总线
+1. ✅ 扩展事件类型（`OrderFilledEvent` 等）
+1. ✅ `Engine` 集成消息总线
 
 ### 优先级 P1（应该做）
-4. 新增 `DataManager`（`aquant/data/manager.py`）
-5. 简化 `BigQuantDataSource`（移除 `_year_cache`）
-6. `Matcher` 支持可插拔 `Guard`
+
+1. 新增 `DataManager`（`aquant/data/manager.py`）
+1. 简化 `BigQuantDataSource`（移除 `_year_cache`）
+1. `Matcher` 支持可插拔 `Guard`
 
 ### 优先级 P2（可以做）
-7. 策略支持事件订阅（`setup_subscriptions` 钩子）
-8. 添加性能分析监听器（订阅所有事件，统计耗时）
-9. 添加实时通知监听器（订阅成交事件，推送到外部系统）
+
+1. 策略支持事件订阅（`setup_subscriptions` 钩子）
+1. 添加性能分析监听器（订阅所有事件，统计耗时）
+1. 添加实时通知监听器（订阅成交事件，推送到外部系统）
 
 ---
 
 ## 兼容性保证
 
 ### 向后兼容
+
 - 所有现有 API 保持不变
 - `demo.py` 和 `momentum_acceleration.py` 无需修改即可运行
 - 新功能通过可选参数提供
 
 ### 迁移路径
+
 1. 第一阶段：内部重构，不影响用户代码
 2. 第二阶段：提供新 API，旧 API 标记为 `@deprecated`
 3. 第三阶段（若需要）：移除旧 API
@@ -471,11 +488,13 @@ MessageBus (中央通信枢纽)
 ## 性能影响评估
 
 ### 消息总线开销
+
 - 每个事件多一次函数调用（~100ns）
 - 订阅者列表查找 O(1)
 - 预期性能损失 < 1%
 
 ### 数据管理器开销
+
 - LRU 缓存命中率 > 90%（相同标的重复查询）
 - 缓存未命中时性能与原实现相同
 - 预期性能提升 10-30%（减少重复查询）

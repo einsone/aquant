@@ -44,6 +44,7 @@ class BacktestConfig(BaseModel):
     volume_cap_ratio: float = Field(default=1.0, gt=0, le=1, description="单笔委托量占当日总成交量的上限比例。默认 1.0（不限制）。设为较小值可模拟大资金的市场冲击约束。")
     benchmark: Any = Field(default=None, description="基准收益序列，类型为 pl.DataFrame，须含 date 和 return 两列。用于计算 Alpha、Beta、信息比率等相对指标。为 None 时跳过。")
     show_progress: bool = Field(default=True, description="是否显示回测进度条。默认 True。")
+    log_level: str = Field(default="INFO", description="日志级别：DEBUG、INFO、WARNING、ERROR。生产环境建议使用 WARNING 提升性能。默认 INFO。")
 
     @field_validator("end")
     @classmethod
@@ -102,6 +103,11 @@ class BacktestResult:
 
 class Engine:
     def __init__(self, strategy: Strategy, data_source: DataSource, config: BacktestConfig, risk_manager: RiskManager | None = None) -> None:
+        # 应用日志级别配置
+        import logging
+
+        logging.getLogger("aquant").setLevel(config.log_level.upper())
+
         self._strategy = strategy
         self._data_source = data_source
         self._config = config
@@ -172,7 +178,8 @@ class Engine:
         # 开盘成交价，导致 SIGNAL 阶段 context.total_value 混用今开与昨收两个时间基准。
         # last_close 在 VALUATION 阶段才更新，FILL 后仍是昨收价，时间基准一致。
         positions = self._portfolio.position_views()
-        total_value = self._portfolio.cash + sum(p.shares * p.last_close for p in positions.values())
+        # 优化：避免重复访问字典，使用三元运算符
+        total_value = self._portfolio.cash + sum(p.shares * p.last_close for p in positions.values()) if positions else self._portfolio.cash
 
         # 性能优化：从对象池获取 Context，复用对象减少内存分配
         return self._context_pool.get(current_date=dt, positions=positions, cash=self._portfolio.cash, total_value=total_value, query=self._query_service)

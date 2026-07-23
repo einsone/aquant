@@ -509,24 +509,39 @@ def cmd_report(args):
 
         # 加载回测结果
         result_path = Path(args.result)
+        if not result_path.exists():
+            print(f"错误: 文件不存在: {result_path}")
+            return 1
+
         with result_path.open("rb") as f:
-            _result = pickle.load(f)
+            result = pickle.load(f)
 
-        # 生成报告 - 模块尚未实现
-        print("错误: 报告生成模块尚未实现")
-        return 1
+        # 验证结果类型
+        from aquant.core.engine import BacktestResult
 
-        # TODO: 实现报告生成
-        # from aquant.reporting.report_generator import ReportGenerator
-        # generator = ReportGenerator()
-        # output_path = args.output or "report.html"
-        # generator.generate(result, output_path)
-        # print(f"✓ 报告已生成: {output_path}")
-        # return 0
+        if not isinstance(result, BacktestResult):
+            print(f"错误: 文件不是有效的回测结果 (期望 BacktestResult，实际 {type(result).__name__})")
+            return 1
+
+        # 确保指标已计算
+        if not result.metrics:
+            print("计算回测指标...")
+            result.compute_metrics()
+
+        # 生成 HTML 报告
+        output_path = args.output or "report.html"
+        print("生成 HTML 报告...")
+        abs_path = result.render_html(path=output_path, open_browser=False)
+
+        print(f"✓ 报告已生成: {abs_path}")
+        return 0
 
     except Exception as e:
         print(f"错误: {e}")
         import traceback
+
+        traceback.print_exc()
+        return 1
 
         traceback.print_exc()
         return 1

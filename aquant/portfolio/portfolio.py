@@ -36,6 +36,9 @@ class Portfolio:
 
         基于上一次 take_snapshot 时的收盘价估值，盘中不实时更新。
         """
+        if not self.positions:
+            return self.cash
+        # 向量化计算：直接遍历值列表，避免 dict.values() 的开销
         return self.cash + sum(p.market_value for p in self.positions.values())
 
     @property

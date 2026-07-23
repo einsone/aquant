@@ -134,6 +134,11 @@ class Engine:
         self._warmup_remaining: int = strategy.warmup_period
         self._pending_signals: list[Signal] = []  # T 日信号，等待 T+1 FILL 阶段执行
 
+        # 性能优化：复用 QueryService 对象
+        from aquant.portfolio.query import PortfolioQueryService
+
+        self._query_service = PortfolioQueryService(daily_nav=self._portfolio._daily_nav, trade_log=self._portfolio.trade_log)
+
     def _build_queue(self, trading_days: list[date]) -> EventQueue:
         q = EventQueue()
         for dt in trading_days:
@@ -160,12 +165,8 @@ class Engine:
         positions = self._portfolio.position_views()
         total_value = self._portfolio.cash + sum(p.shares * p.last_close for p in positions.values())
 
-        # 新增：创建查询服务
-        from aquant.portfolio.query import PortfolioQueryService
-
-        query_service = PortfolioQueryService(daily_nav=self._portfolio._daily_nav, trade_log=self._portfolio.trade_log)
-
-        return Context(current_date=dt, positions=positions, cash=self._portfolio.cash, total_value=total_value, query=query_service)
+        # 性能优化：复用 QueryService 对象
+        return Context(current_date=dt, positions=positions, cash=self._portfolio.cash, total_value=total_value, query=self._query_service)
 
     def run(self) -> BacktestResult:
         total_days = len(self._trading_days)

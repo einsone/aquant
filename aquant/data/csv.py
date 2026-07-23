@@ -165,20 +165,34 @@ class CSVDataSource(DataSource):
         # 筛选指定股票
         df_filtered = df.filter(pl.col("symbol").is_in(symbols))
 
+        # 向量化转换（避免 iter_rows，提升性能）
         result: dict[str, DayBar] = {}
-        for row in df_filtered.iter_rows(named=True):
-            sym = row["symbol"]
+
+        # 一次性提取所有列
+        symbols_list = df_filtered.get_column("symbol").to_list()
+        dates = df_filtered.get_column("date").to_list()
+        opens = df_filtered.get_column("open").to_list()
+        closes = df_filtered.get_column("close").to_list()
+        highs = df_filtered.get_column("high").to_list()
+        lows = df_filtered.get_column("low").to_list()
+        volumes = df_filtered.get_column("volume").to_list()
+        up_limits = df_filtered.get_column("up_limit").to_list()
+        down_limits = df_filtered.get_column("down_limit").to_list()
+        is_halteds = df_filtered.get_column("is_halted").to_list()
+
+        # 向量化构建
+        for i, sym in enumerate(symbols_list):
             result[sym] = DayBar(
                 symbol=sym,
-                date=row["date"],
-                open=float(row["open"]),
-                close=float(row["close"]),
-                high=float(row["high"]),
-                low=float(row["low"]),
-                volume=float(row["volume"]),
-                up_limit=float(row["up_limit"]) if row["up_limit"] is not None else float(row["close"]) * 1.1,
-                down_limit=float(row["down_limit"]) if row["down_limit"] is not None else float(row["close"]) * 0.9,
-                is_halted=bool(row["is_halted"]),
+                date=dates[i],
+                open=float(opens[i]),
+                close=float(closes[i]),
+                high=float(highs[i]),
+                low=float(lows[i]),
+                volume=float(volumes[i]),
+                up_limit=float(up_limits[i]) if up_limits[i] is not None else float(closes[i]) * 1.1,
+                down_limit=float(down_limits[i]) if down_limits[i] is not None else float(closes[i]) * 0.9,
+                is_halted=bool(is_halteds[i]),
             )
 
         return result

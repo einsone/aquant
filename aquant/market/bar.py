@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 
@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from datetime import date
 
 
-class AssetType(str, Enum):
+class AssetType(StrEnum):
     """资产类型枚举。"""
 
     STOCK = "STOCK"  # 股票

@@ -40,7 +40,6 @@ class MomentumStrategy(Strategy):
 
     def on_bar(self, context):
         # 模拟数据查询和计算
-        dt = context.current_date
 
         # 模拟价格数据（实际应该从 data_source 获取）
         for sym in self.symbols:
@@ -84,10 +83,7 @@ def benchmark_scenario(name: str, strategy_cls, symbols: list[str], days: int):
     data_source = SyntheticDataSource(symbols=symbols, days=days, start_date=start_date)
 
     # 创建策略
-    if strategy_cls == SimpleStrategy:
-        strategy = strategy_cls(symbols=symbols)
-    else:
-        strategy = strategy_cls(symbols=symbols, lookback=20)
+    strategy = strategy_cls(symbols=symbols) if strategy_cls == SimpleStrategy else strategy_cls(symbols=symbols, lookback=20)
 
     # 配置回测 - 使用数据源的日历范围
     calendar = data_source.calendar

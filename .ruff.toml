@@ -53,6 +53,10 @@ cache-dir = ".ruff_cache"
     "**/*_test.py"  = ["S101"]
     "**/test_*.py"  = ["S101"]
     "tests/**/*.py" = ["S101"]
+    # 实盘引擎需要在运行时访问 RiskGuard 类型
+    "aquant/live/engine.py" = ["TC004"]
+    # 工具模块使用传统 open() 处理缓存
+    "aquant/tools/data_tools.py" = ["PTH123"]
 
 [lint.isort]
     # import 排序配置

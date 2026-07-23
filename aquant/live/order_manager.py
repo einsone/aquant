@@ -4,7 +4,7 @@
 """
 
 import time
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 import structlog
@@ -15,7 +15,7 @@ from aquant.broker.adapter import BrokerAdapter
 logger = structlog.get_logger()
 
 
-class OrderStatus(str, Enum):
+class OrderStatus(StrEnum):
     """订单状态"""
 
     PENDING = "pending"  # 待提交

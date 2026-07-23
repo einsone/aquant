@@ -29,10 +29,7 @@ class StrategyAnalyzer:
             return pd.Series(dtype=float)
 
         # 转换为 pandas
-        if isinstance(nav_df, pl.DataFrame):
-            df = nav_df.to_pandas()
-        else:
-            df = nav_df
+        df = nav_df.to_pandas() if isinstance(nav_df, pl.DataFrame) else nav_df
 
         if "date" not in df.columns or "nav" not in df.columns:
             return pd.Series(dtype=float)

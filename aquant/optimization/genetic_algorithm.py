@@ -144,7 +144,7 @@ class GeneticAlgorithm:
         for individual in individuals:
             try:
                 # 创建策略并回测
-                strategy = self.strategy_class(**individual.genes, data_source=self.data_source)
+                strategy = self.strategy_class(**individual.genes, data_source=self.data_source)  # type: ignore[call-arg]
                 engine = Engine(strategy, self.data_source, self.backtest_config)
                 result = engine.run()
                 result.compute_metrics()

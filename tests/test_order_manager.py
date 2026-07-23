@@ -271,7 +271,7 @@ def test_get_filled_orders(mock_broker):
     manager = OrderManager(mock_broker)
 
     order1 = manager.submit_order(symbol="000001.SZ", side="buy", shares=100)
-    order2 = manager.submit_order(symbol="000002.SZ", side="buy", shares=200)
+    manager.submit_order(symbol="000002.SZ", side="buy", shares=200)
 
     # 模拟一个已成交
     order1.status = OrderStatus.FILLED

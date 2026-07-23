@@ -303,7 +303,7 @@ def cmd_validate(args):
         print("\n提示: 请检查文件路径是否正确")
         return 1
 
-    if not strategy_path.suffix == ".py":
+    if strategy_path.suffix != ".py":
         print("✗ 错误: 策略文件必须是 .py 文件")
         return 1
 

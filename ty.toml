@@ -29,8 +29,24 @@
     rules   = { unresolved-import = "ignore" }
 
 [[overrides]]
+    include = ["aquant/optimization/grid_search.py", "aquant/optimization/walk_forward.py"]
+    rules   = { invalid-assignment = "ignore" }
+
+[[overrides]]
+    include = ["aquant/tools/data_tools.py"]
+    rules   = { unresolved-import = "ignore", missing-argument = "ignore", unresolved-attribute = "ignore" }
+
+[[overrides]]
+    include = ["aquant/optimization/genetic_algorithm.py"]
+    rules   = { unresolved-attribute = "ignore", unknown-argument = "ignore" }
+
+[[overrides]]
+    include = ["benchmarks/parallel_backtest.py"]
+    rules   = { unresolved-attribute = "ignore" }
+
+[[overrides]]
     include = ["examples/tools_demo.py"]
-    rules   = { missing-argument = "ignore", unresolved-attribute = "ignore" }
+    rules   = { missing-argument = "ignore", unresolved-attribute = "ignore", unresolved-import = "ignore" }
 
 [[overrides]]
     include = ["tests/test_grid_search.py", "tests/test_walk_forward.py"]

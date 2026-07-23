@@ -31,9 +31,9 @@ def grid_search(strategy_cls: type[Strategy], param_grid: dict[str, list], confi
         strategy = strategy_cls(**params)
         # 注入 data_source 和 universe，策略可能需要访问
         if not hasattr(strategy, "data_source"):
-            strategy.data_source = data_source
+            strategy.data_source = data_source  # type: ignore[attr-defined]
         if not hasattr(strategy, "universe") and hasattr(config, "universe"):
-            strategy.universe = config.universe
+            strategy.universe = config.universe  # type: ignore[attr-defined]
         engine = Engine(strategy=strategy, data_source=data_source, config=config)
         result = engine.run()
         row = {**params, **result.metrics}

@@ -3,24 +3,24 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 
-class OrderSide(str, Enum):
+class OrderSide(StrEnum):
     """订单方向。"""
 
     BUY = "BUY"  # 买入
     SELL = "SELL"  # 卖出
 
 
-class OrderType(str, Enum):
+class OrderType(StrEnum):
     """订单类型。"""
 
     MARKET = "MARKET"  # 市价单
     LIMIT = "LIMIT"  # 限价单
 
 
-class OrderStatus(str, Enum):
+class OrderStatus(StrEnum):
     """订单状态。"""
 
     PENDING = "PENDING"  # 待提交

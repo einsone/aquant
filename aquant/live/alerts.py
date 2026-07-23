@@ -5,7 +5,7 @@
 
 import json
 from abc import ABC, abstractmethod
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 import requests
@@ -15,7 +15,7 @@ import structlog
 logger = structlog.get_logger()
 
 
-class AlertLevel(str, Enum):
+class AlertLevel(StrEnum):
     """告警级别"""
 
     INFO = "info"

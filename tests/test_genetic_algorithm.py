@@ -53,7 +53,7 @@ class SimpleStrategy(Strategy):
     def on_bar(self, context):
         # 简单策略逻辑
         if len(context.universe) > 0:
-            symbol = list(context.universe)[0]
+            symbol = next(iter(context.universe))
             return [Signal(symbol=symbol, weight=1.0)]
         return []
 

@@ -66,19 +66,25 @@ class MomentumStrategy(Strategy):
     def __init__(self, data_source: DataSource):
         self.data_source = data_source
         self.universe = ["000001.SZ", "000002.SZ", "600000.SH"]
+        self.prev_prices = {}
 
     def on_bar(self, context: Context) -> list[Signal]:
         if context.current_date == date(2023, 1, 3):
+            # 第一天记录价格
+            bars = self.data_source.load_bars(context.current_date, set(self.universe))
+            for symbol, bar in bars.items():
+                self.prev_prices[symbol] = bar.close
             # 第一天平均分配
             return [Signal(symbol="000001.SZ", weight=0.33), Signal(symbol="000002.SZ", weight=0.33), Signal(symbol="600000.SH", weight=0.34)]
 
         # 计算动量并选择最强的股票
+        bars = self.data_source.load_bars(context.current_date, set(self.universe))
         momentum = {}
-        for symbol in self.universe:
-            bars = context.query.get_bars(symbol=symbol, count=2)
-            if len(bars) >= 2:
-                ret = (bars[-1].close - bars[-2].close) / bars[-2].close
+        for symbol, bar in bars.items():
+            if symbol in self.prev_prices:
+                ret = (bar.close - self.prev_prices[symbol]) / self.prev_prices[symbol]
                 momentum[symbol] = ret
+            self.prev_prices[symbol] = bar.close
 
         if momentum:
             best_symbol = max(momentum.items(), key=lambda x: x[1])[0]
@@ -131,7 +137,9 @@ def test_end_to_end_buy_and_hold():
     result = engine.run()
 
     # 验证持仓
-    assert result.portfolio.positions.get("000001.SZ", 0) > 0
+    position = result.portfolio.positions.get("000001.SZ")
+    assert position is not None
+    assert position.shares > 0
 
     # 计算指标
     result.compute_metrics()
@@ -329,7 +337,7 @@ def test_end_to_end_metrics_calculation():
     result.compute_metrics()
 
     # 验证关键指标都存在
-    required_metrics = ["total_return", "annual_return", "sharpe", "max_drawdown", "win_rate"]
+    required_metrics = ["total_return", "annualized_return", "sharpe", "max_drawdown", "win_rate"]
 
     for metric in required_metrics:
         assert metric in result.metrics

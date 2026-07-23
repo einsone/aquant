@@ -1,5 +1,5 @@
 [project]
-    dependencies    = ["bigquantdai>=1.0.9", "polars>=1.41.2", "pydantic>=2.0", "structlog>=26.1.0"]
+    dependencies    = ["polars>=1.41.2", "pydantic>=2.0", "structlog>=26.1.0"]
     description     = "Add your description here"
     name            = "aquant"
     readme          = "README.md"

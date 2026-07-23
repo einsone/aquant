@@ -1,5 +1,9 @@
 """基于 BigQuant DAI 的 DataSource 实现。
 
+⚠️ **DEPRECATED**: 此数据源已弃用，请使用以下替代方案：
+    - ALDSDataSource: 本地 A 股数据（推荐）
+    - CSVDataSource: 通用 CSV 文件数据
+
 通过 ``bigquantdai`` SDK 的 ``dai.query(sql).arrow()`` 接口按需查询，
 避免整表读入内存。表名（如 cn_stock_real_bar1d、cn_stock_status、
 cn_stock_basic_info 等）与列名以实际 DAI schema 为准。
@@ -7,10 +11,14 @@ cn_stock_basic_info 等）与列名以实际 DAI schema 为准。
 依赖::
 
     pip install bigquantdai
+
+.. deprecated:: 0.2.0
+   使用 ALDSDataSource 或 CSVDataSource 替代。
 """
 
 from __future__ import annotations
 
+import warnings
 from functools import cached_property
 from typing import TYPE_CHECKING, cast
 
@@ -26,10 +34,16 @@ if TYPE_CHECKING:
 
 
 class BigQuantDataSource(DataSource):
-    """从 BigQuant DAI 拉取行情、企业行动与退市数据的数据源。"""
+    """从 BigQuant DAI 拉取行情、企业行动与退市数据的数据源。
+
+    .. deprecated:: 0.2.0
+       使用 ALDSDataSource 或 CSVDataSource 替代。
+    """
 
     def __init__(self, access_key: str, secret_key: str) -> None:
-        from bigquantdai import dai
+        warnings.warn("BigQuantDataSource 已弃用，请使用 ALDSDataSource 或 CSVDataSource", DeprecationWarning, stacklevel=2)
+
+        from bigquantdai import dai  # type: ignore[import-not-found]
 
         dai.login(access_key, secret_key)
         self._dai = dai

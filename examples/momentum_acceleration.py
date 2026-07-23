@@ -1,4 +1,8 @@
-"""加速动量策略示例（BigQuant DAI 数据源）。
+"""加速动量策略示例。
+
+⚠️ **注意**: 此示例使用已弃用的 BigQuantDataSource。
+推荐使用 ALDSDataSource 或 CSVDataSource。
+参考 examples/risk_controlled_momentum.py 查看新的数据源用法。
 
 策略逻辑
 --------
@@ -22,12 +26,17 @@
 from __future__ import annotations
 
 import os
+import warnings
 from datetime import date, timedelta
 from typing import TYPE_CHECKING
 
 from aquant import BacktestConfig, Engine, Signal, Strategy
 from aquant.data.bigquant import BigQuantDataSource
 from aquant.log import get_logger, setup_logging
+
+
+# 显示弃用警告
+warnings.warn("此示例使用已弃用的 BigQuantDataSource。推荐使用 ALDSDataSource 或 CSVDataSource。参考 examples/risk_controlled_momentum.py 查看新的数据源用法。", DeprecationWarning, stacklevel=2)
 
 
 if TYPE_CHECKING:

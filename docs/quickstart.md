@@ -68,13 +68,17 @@ class MomentumStrategy(Strategy):
 
 ### 2. 准备数据源
 
-使用 BigQuant DAI 数据源（或自定义数据源）：
+使用 ALDS 数据源（本地 A 股数据）或 CSV 数据源：
 
 ```python
-from aquant.data.bigquant import BigQuantDAISource
+from aquant.data.alds import ALDSDataSource
+# 或者使用 CSV 数据源
+# from aquant.data.csv import CSVDataSource
 
 # 初始化数据源
-data_source = BigQuantDAISource()
+data_source = ALDSDataSource()
+# 或者
+# data_source = CSVDataSource(data_dir="./data/daily")
 ```
 
 ### 3. 配置回测引擎

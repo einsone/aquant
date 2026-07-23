@@ -32,18 +32,32 @@ from datetime import date
 from aquant.strategy.base import Strategy
 from aquant.core.context import Context
 from aquant.strategy.signal import Signal
+from aquant.data.alds import ALDSDataSource
+
+# 股票池定义
+UNIVERSE = ["000001.SZ", "000002.SZ", "600000.SH", "600519.SH"]
 
 class MomentumStrategy(Strategy):
     """动量策略：买入过去 20 日涨幅最大的 5 只股票"""
 
-    def __init__(self, lookback: int = 20, top_n: int = 5):
+    warmup_period: int = 20
+    rebalance_mode: str = "replace"
+
+    def __init__(self, lookback: int = 20, top_n: int = 5, data_source: ALDSDataSource | None = None):
         self.lookback = lookback
         self.top_n = top_n
+        self.data_source = data_source
         self.price_history = {}
 
     def on_bar(self, context: Context) -> list[Signal]:
+        if self.data_source is None:
+            return []
+
+        # 从数据源加载当日行情
+        bars = self.data_source.load_bars(context.current_date, set(UNIVERSE))
+
         # 更新价格历史
-        for symbol, bar in context.bars.items():
+        for symbol, bar in bars.items():
             if symbol not in self.price_history:
                 self.price_history[symbol] = []
             self.price_history[symbol].append(bar.close)
@@ -51,7 +65,8 @@ class MomentumStrategy(Strategy):
 
         # 计算动量并选股
         momentum = {}
-        for symbol, prices in self.price_history.items():
+        for symbol in UNIVERSE:
+            prices = self.price_history.get(symbol, [])
             if len(prices) >= self.lookback:
                 momentum[symbol] = (prices[-1] - prices[0]) / prices[0]
 
@@ -67,20 +82,22 @@ class MomentumStrategy(Strategy):
 
 ```python
 from aquant.core.engine import Engine, BacktestConfig
-from aquant.data.bigquant import BigQuantDAISource
+from aquant.data.alds import ALDSDataSource
 
 # 配置回测
 config = BacktestConfig(
     start=date(2023, 1, 1),
     end=date(2023, 12, 31),
     initial_capital=1_000_000.0,
-    universe=["000001.SZ", "000002.SZ", "600000.SH", "600519.SH"],
 )
+
+# 创建数据源
+data_source = ALDSDataSource()
 
 # 运行回测
 engine = Engine(
-    strategy=MomentumStrategy(lookback=20, top_n=5),
-    data_source=BigQuantDAISource(),
+    strategy=MomentumStrategy(lookback=20, top_n=5, data_source=data_source),
+    data_source=data_source,
     config=config,
 )
 result = engine.run()
@@ -89,6 +106,7 @@ result = engine.run()
 print(f"总收益率: {result.metrics['total_return']:.2%}")
 print(f"夏普比率: {result.metrics['sharpe']:.2f}")
 print(f"最大回撤: {result.metrics['max_drawdown']:.2%}")
+```
 ```
 
 ## 📖 文档

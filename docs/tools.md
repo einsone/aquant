@@ -280,7 +280,7 @@ filled = DataCleaner.fill_missing_dates(df, date_column="date")
 
 # 使用前向填充
 filled = DataCleaner.fill_missing_dates(
-    df, 
+    df,
     date_column="date",
     method="ffill"
 )

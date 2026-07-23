@@ -3,11 +3,12 @@
 提供数据下载、清洗、转换等实用工具。
 """
 
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
 
 import pandas as pd
 import structlog
+
 
 logger = structlog.get_logger()
 
@@ -43,13 +44,7 @@ class DataDownloader:
         # 下载数据
         if source == "synthetic":
             # 合成数据：常见的 A 股代码
-            symbols = [
-                "000001.SZ",
-                "000002.SZ",
-                "600000.SH",
-                "600519.SH",
-                "000858.SZ",
-            ]
+            symbols = ["000001.SZ", "000002.SZ", "600000.SH", "600519.SH", "000858.SZ"]
         elif source == "tushare":
             try:
                 import tushare as ts
@@ -87,9 +82,7 @@ class DataDownloader:
         logger.info("下载股票列表完成", count=len(symbols), source=source)
         return symbols
 
-    def download_daily_bars(
-        self, symbols: list[str], start_date: date, end_date: date, source: str = "synthetic"
-    ) -> pd.DataFrame:
+    def download_daily_bars(self, symbols: list[str], start_date: date, end_date: date, source: str = "synthetic") -> pd.DataFrame:
         """下载日线数据
 
         Args:
@@ -101,10 +94,7 @@ class DataDownloader:
         Returns:
             包含 OHLCV 的 DataFrame
         """
-        cache_file = (
-            self.cache_dir
-            / f"daily_{source}_{start_date.isoformat()}_{end_date.isoformat()}.parquet"
-        )
+        cache_file = self.cache_dir / f"daily_{source}_{start_date.isoformat()}_{end_date.isoformat()}.parquet"
 
         # 检查缓存
         if cache_file.exists():
@@ -122,17 +112,7 @@ class DataDownloader:
             # 转换为 DataFrame
             records = []
             for bar in bars:
-                records.append(
-                    {
-                        "symbol": bar.symbol,
-                        "date": bar.date,
-                        "open": bar.open,
-                        "high": bar.high,
-                        "low": bar.low,
-                        "close": bar.close,
-                        "volume": bar.volume,
-                    }
-                )
+                records.append({"symbol": bar.symbol, "date": bar.date, "open": bar.open, "high": bar.high, "low": bar.low, "close": bar.close, "volume": bar.volume})
             df = pd.DataFrame(records)
 
         elif source == "tushare":

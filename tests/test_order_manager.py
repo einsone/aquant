@@ -1,6 +1,5 @@
 """测试订单管理器"""
 
-import time
 from unittest.mock import Mock
 
 import pytest
@@ -27,11 +26,7 @@ def mock_broker():
     broker.buy.side_effect = buy_side_effect
     broker.sell.side_effect = sell_side_effect
     broker.cancel_order.return_value = True
-    broker.get_order_status.return_value = {
-        "status": "filled",
-        "filled_shares": 100,
-        "avg_price": 10.5,
-    }
+    broker.get_order_status.return_value = {"status": "filled", "filled_shares": 100, "avg_price": 10.5}
     return broker
 
 
@@ -139,11 +134,7 @@ def test_check_orders(mock_broker):
 
 def test_check_partial_filled_order(mock_broker):
     """测试部分成交订单"""
-    mock_broker.get_order_status.return_value = {
-        "status": "partial_filled",
-        "filled_shares": 50,
-        "avg_price": 10.3,
-    }
+    mock_broker.get_order_status.return_value = {"status": "partial_filled", "filled_shares": 50, "avg_price": 10.3}
 
     manager = OrderManager(mock_broker)
     order = manager.submit_order(symbol="000001.SZ", side="buy", shares=100)
@@ -169,10 +160,7 @@ def test_check_cancelled_order(mock_broker):
 
 def test_check_rejected_order(mock_broker):
     """测试被拒绝订单"""
-    mock_broker.get_order_status.return_value = {
-        "status": "rejected",
-        "reject_reason": "资金不足",
-    }
+    mock_broker.get_order_status.return_value = {"status": "rejected", "reject_reason": "资金不足"}
 
     manager = OrderManager(mock_broker)
     order = manager.submit_order(symbol="000001.SZ", side="buy", shares=100)
@@ -187,6 +175,7 @@ def test_cancel_order(mock_broker):
     manager = OrderManager(mock_broker)
     order = manager.submit_order(symbol="000001.SZ", side="buy", shares=100)
 
+    assert order.order_id is not None
     success = manager.cancel_order(order.order_id)
 
     assert success
@@ -211,6 +200,7 @@ def test_cancel_completed_order(mock_broker):
     # 模拟订单已成交
     order.status = OrderStatus.FILLED
 
+    assert order.order_id is not None
     success = manager.cancel_order(order.order_id)
 
     assert not success
@@ -244,6 +234,7 @@ def test_get_order(mock_broker):
     manager = OrderManager(mock_broker)
     order = manager.submit_order(symbol="000001.SZ", side="buy", shares=100)
 
+    assert order.order_id is not None
     retrieved = manager.get_order(order.order_id)
 
     assert retrieved == order

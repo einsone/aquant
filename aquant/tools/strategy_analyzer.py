@@ -3,8 +3,6 @@
 提供策略性能的深度分析，包括归因分析、因子分解、周期分析等。
 """
 
-from datetime import date
-
 import numpy as np
 import pandas as pd
 import polars as pl
@@ -115,15 +113,7 @@ class StrategyAnalyzer:
         trades = self.result.trade_log
 
         if not trades:
-            return {
-                "total_trades": 0,
-                "win_trades": 0,
-                "loss_trades": 0,
-                "win_rate": 0.0,
-                "avg_win": 0.0,
-                "avg_loss": 0.0,
-                "profit_factor": 0.0,
-            }
+            return {"total_trades": 0, "win_trades": 0, "loss_trades": 0, "win_rate": 0.0, "avg_win": 0.0, "avg_loss": 0.0, "profit_factor": 0.0}
 
         # 计算每笔交易盈亏
         profits = []
@@ -135,15 +125,7 @@ class StrategyAnalyzer:
             profits.append(pnl)
 
         if not profits:
-            return {
-                "total_trades": 0,
-                "win_trades": 0,
-                "loss_trades": 0,
-                "win_rate": 0.0,
-                "avg_win": 0.0,
-                "avg_loss": 0.0,
-                "profit_factor": 0.0,
-            }
+            return {"total_trades": 0, "win_trades": 0, "loss_trades": 0, "win_rate": 0.0, "avg_win": 0.0, "avg_loss": 0.0, "profit_factor": 0.0}
 
         wins = [p for p in profits if p > 0]
         losses = [p for p in profits if p < 0]
@@ -185,11 +167,7 @@ class StrategyAnalyzer:
         if not holding_periods:
             return {"avg_holding_days": 0, "min_holding_days": 0, "max_holding_days": 0}
 
-        return {
-            "avg_holding_days": np.mean(holding_periods),
-            "min_holding_days": min(holding_periods),
-            "max_holding_days": max(holding_periods),
-        }
+        return {"avg_holding_days": np.mean(holding_periods), "min_holding_days": min(holding_periods), "max_holding_days": max(holding_periods)}
 
     def turnover_analysis(self) -> dict:
         """换手率分析
@@ -236,13 +214,7 @@ class StrategyAnalyzer:
             包含所有分析结果的字典
         """
         return {
-            "basic_metrics": {
-                "total_return": self.result.total_return,
-                "annualized_return": self.result.annualized_return,
-                "sharpe_ratio": self.result.sharpe_ratio,
-                "max_drawdown": self.result.max_drawdown,
-                "total_trades": len(self.result.trade_log),
-            },
+            "basic_metrics": {"total_return": self.result.total_return, "annualized_return": self.result.annualized_return, "sharpe_ratio": self.result.sharpe_ratio, "max_drawdown": self.result.max_drawdown, "total_trades": len(self.result.trade_log)},
             "monthly_returns": self.monthly_returns().to_dict(),
             "yearly_returns": self.yearly_returns().to_dict(),
             "win_loss": self.win_loss_analysis(),

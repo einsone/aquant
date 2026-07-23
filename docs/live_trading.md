@@ -24,28 +24,28 @@ from aquant.broker.adapter import BrokerAdapter
 
 class MyBrokerAdapter(BrokerAdapter):
     """自定义券商适配器"""
-    
+
     def __init__(self, account_id: str, api_key: str):
         self.account_id = account_id
         self.api_key = api_key
         # 初始化券商 API 连接
-        
+
     def buy(self, symbol: str, shares: int, price: float | None = None) -> str:
         """买入股票，返回订单ID"""
         # 调用券商 API 下单
         order_id = self._call_broker_api(...)
         return order_id
-        
+
     def sell(self, symbol: str, shares: int, price: float | None = None) -> str:
         """卖出股票，返回订单ID"""
         order_id = self._call_broker_api(...)
         return order_id
-        
+
     def cancel_order(self, order_id: str) -> bool:
         """撤销订单"""
         success = self._call_broker_api(...)
         return success
-        
+
     def get_order_status(self, order_id: str) -> dict:
         """查询订单状态"""
         status = self._call_broker_api(...)
@@ -54,7 +54,7 @@ class MyBrokerAdapter(BrokerAdapter):
             "filled_shares": 100,
             "avg_price": 10.5
         }
-        
+
     def get_position(self, symbol: str) -> dict | None:
         """查询持仓"""
         position = self._call_broker_api(...)
@@ -153,15 +153,15 @@ live_engine = LiveEngine(
     data_source=data_source,
     order_manager=order_mgr,
     alert_manager=alert_mgr,
-    
+
     # 交易时间配置
     market_open=time(9, 30),
     market_close=time(15, 0),
-    
+
     # 风控配置
     max_position_value=500000,  # 单个持仓最大市值
     max_daily_loss=10000,       # 日最大亏损
-    
+
     # 止损配置
     stop_loss_pct=0.05,  # 5% 止损
 )
@@ -334,16 +334,16 @@ class MyStrategy(Strategy):
     def __init__(self, data_source, max_position=0.2):
         self.data_source = data_source
         self.max_position = max_position  # 单个持仓不超过 20%
-        
+
     def on_bar(self, context):
         # 计算目标仓位
         signals = self._generate_signals(context)
-        
+
         # 风控：限制单个持仓
         for signal in signals:
             if signal.weight > self.max_position:
                 signal.weight = self.max_position
-                
+
         return signals
 ```
 
@@ -356,27 +356,27 @@ class StopLossStrategy(Strategy):
         self.stop_loss = stop_loss
         self.take_profit = take_profit
         self.entry_prices = {}
-        
+
     def on_bar(self, context):
         signals = []
-        
+
         # 检查持仓止损止盈
         for symbol, position in context.positions.items():
             entry_price = self.entry_prices.get(symbol, position.cost_basis)
             current_price = context.current_bars[symbol].close
-            
+
             ret = (current_price - entry_price) / entry_price
-            
+
             # 止损
             if ret <= -self.stop_loss:
                 signals.append(Signal(symbol=symbol, weight=0))
                 alert_mgr.warning("触发止损", f"{symbol} 亏损 {ret:.2%}")
-                
+
             # 止盈
             elif ret >= self.take_profit:
                 signals.append(Signal(symbol=symbol, weight=0))
                 alert_mgr.info("触发止盈", f"{symbol} 盈利 {ret:.2%}")
-                
+
         return signals
 ```
 
@@ -388,15 +388,15 @@ class DailyLossLimit:
         self.max_daily_loss = max_daily_loss
         self.daily_pnl = 0
         self.today = None
-        
+
     def check(self, current_date, current_pnl):
         # 重置日计数
         if self.today != current_date:
             self.today = current_date
             self.daily_pnl = 0
-            
+
         self.daily_pnl = current_pnl
-        
+
         # 检查是否超限
         if self.daily_pnl <= -self.max_daily_loss:
             alert_mgr.critical(
@@ -404,7 +404,7 @@ class DailyLossLimit:
                 f"今日亏损 {self.daily_pnl:.2f}，已暂停交易"
             )
             return False
-            
+
         return True
 ```
 
@@ -431,12 +431,12 @@ logger = logging.getLogger(__name__)
 class MyStrategy(Strategy):
     def on_bar(self, context):
         logger.info(f"处理 {context.current_date} 的数据")
-        
+
         signals = self._generate_signals(context)
-        
+
         for signal in signals:
             logger.info(f"生成信号: {signal.symbol} 权重 {signal.weight}")
-            
+
         return signals
 ```
 
@@ -448,12 +448,12 @@ import time
 class PerformanceMonitor:
     def __init__(self):
         self.metrics = {}
-        
+
     def record(self, name, duration):
         if name not in self.metrics:
             self.metrics[name] = []
         self.metrics[name].append(duration)
-        
+
     def report(self):
         for name, durations in self.metrics.items():
             avg = sum(durations) / len(durations)
@@ -465,12 +465,12 @@ monitor = PerformanceMonitor()
 class MyStrategy(Strategy):
     def on_bar(self, context):
         start = time.time()
-        
+
         signals = self._generate_signals(context)
-        
+
         duration = time.time() - start
         monitor.record("signal_generation", duration)
-        
+
         return signals
 ```
 
@@ -497,22 +497,22 @@ class HealthCheck:
     def check_data_source(self):
         """检查数据源连接"""
         pass
-        
+
     def check_broker_connection(self):
         """检查券商连接"""
         pass
-        
+
     def check_order_queue(self):
         """检查订单队列"""
         pass
-        
+
     def run_all(self):
         checks = [
             ("数据源", self.check_data_source),
             ("券商连接", self.check_broker_connection),
             ("订单队列", self.check_order_queue),
         ]
-        
+
         for name, check in checks:
             try:
                 check()
@@ -551,12 +551,12 @@ def reconcile():
     """对账：比对系统持仓与券商实际持仓"""
     system_positions = get_system_positions()
     broker_positions = broker.get_all_positions()
-    
+
     mismatches = []
     for symbol in set(system_positions.keys()) | set(broker_positions.keys()):
         sys_shares = system_positions.get(symbol, 0)
         broker_shares = broker_positions.get(symbol, 0)
-        
+
         if sys_shares != broker_shares:
             mismatches.append({
                 "symbol": symbol,
@@ -564,10 +564,10 @@ def reconcile():
                 "broker": broker_shares,
                 "diff": sys_shares - broker_shares
             })
-            
+
     if mismatches:
         alert_mgr.warning("持仓不一致", str(mismatches))
-        
+
     return mismatches
 
 # 每日收盘后对账
@@ -607,7 +607,7 @@ def check_data_freshness(bar, max_delay=60):
     now = datetime.now()
     data_time = datetime.combine(bar.date, datetime.min.time())
     delay = (now - data_time).total_seconds()
-    
+
     if delay > max_delay:
         alert_mgr.warning(
             "数据延迟",

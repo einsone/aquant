@@ -11,6 +11,7 @@ from typing import Any
 import requests
 import structlog
 
+
 logger = structlog.get_logger()
 
 
@@ -43,12 +44,7 @@ class ConsoleAlertChannel(AlertChannel):
     """控制台告警（仅用于开发测试）"""
 
     def send(self, level: AlertLevel, title: str, message: str, extra: dict[str, Any] | None = None):
-        log_func = {
-            AlertLevel.INFO: logger.info,
-            AlertLevel.WARNING: logger.warning,
-            AlertLevel.ERROR: logger.error,
-            AlertLevel.CRITICAL: logger.critical,
-        }[level]
+        log_func = {AlertLevel.INFO: logger.info, AlertLevel.WARNING: logger.warning, AlertLevel.ERROR: logger.error, AlertLevel.CRITICAL: logger.critical}[level]
 
         log_func("告警", title=title, message=message, extra=extra)
 
@@ -115,12 +111,7 @@ class DingTalkAlertChannel(AlertChannel):
             content += f"\n\n```json\n{json.dumps(extra, indent=2, ensure_ascii=False)}\n```"
 
         # 添加告警级别标记
-        level_emoji = {
-            AlertLevel.INFO: "ℹ️",
-            AlertLevel.WARNING: "⚠️",
-            AlertLevel.ERROR: "❌",
-            AlertLevel.CRITICAL: "🔥",
-        }
+        level_emoji = {AlertLevel.INFO: "ℹ️", AlertLevel.WARNING: "⚠️", AlertLevel.ERROR: "❌", AlertLevel.CRITICAL: "🔥"}
         content = f"{level_emoji[level]} {content}"
 
         # 签名
@@ -128,22 +119,12 @@ class DingTalkAlertChannel(AlertChannel):
         if self.secret:
             timestamp = str(round(time.time() * 1000))
             string_to_sign = f"{timestamp}\n{self.secret}"
-            hmac_code = hmac.new(
-                self.secret.encode("utf-8"),
-                string_to_sign.encode("utf-8"),
-                digestmod=hashlib.sha256,
-            ).digest()
+            hmac_code = hmac.new(self.secret.encode("utf-8"), string_to_sign.encode("utf-8"), digestmod=hashlib.sha256).digest()
             sign = quote_plus(hmac_code.hex())
             url = f"{self.webhook_url}&timestamp={timestamp}&sign={sign}"
 
         # 发送消息
-        payload = {
-            "msgtype": "markdown",
-            "markdown": {
-                "title": title,
-                "text": content,
-            },
-        }
+        payload = {"msgtype": "markdown", "markdown": {"title": title, "text": content}}
 
         try:
             response = requests.post(url, json=payload, timeout=5)
@@ -172,21 +153,11 @@ class WeChatWorkAlertChannel(AlertChannel):
             content += f"\n\n```json\n{json.dumps(extra, indent=2, ensure_ascii=False)}\n```"
 
         # 添加告警级别标记
-        level_text = {
-            AlertLevel.INFO: "信息",
-            AlertLevel.WARNING: "警告",
-            AlertLevel.ERROR: "错误",
-            AlertLevel.CRITICAL: "严重",
-        }
+        level_text = {AlertLevel.INFO: "信息", AlertLevel.WARNING: "警告", AlertLevel.ERROR: "错误", AlertLevel.CRITICAL: "严重"}
         content = f"[{level_text[level]}] {content}"
 
         # 发送消息
-        payload = {
-            "msgtype": "markdown",
-            "markdown": {
-                "content": content,
-            },
-        }
+        payload = {"msgtype": "markdown", "markdown": {"content": content}}
 
         try:
             response = requests.post(self.webhook_url, json=payload, timeout=5)
@@ -216,13 +187,7 @@ class AlertManager:
         """
         self.channels.append(channel)
 
-    def send(
-        self,
-        level: AlertLevel,
-        title: str,
-        message: str,
-        extra: dict[str, Any] | None = None,
-    ):
+    def send(self, level: AlertLevel, title: str, message: str, extra: dict[str, Any] | None = None):
         """发送告警到所有渠道
 
         Args:

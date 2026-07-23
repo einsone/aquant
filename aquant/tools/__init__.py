@@ -6,9 +6,5 @@
 from aquant.tools.data_tools import DataCleaner, DataConverter, DataDownloader
 from aquant.tools.strategy_analyzer import StrategyAnalyzer
 
-__all__ = [
-    "StrategyAnalyzer",
-    "DataDownloader",
-    "DataCleaner",
-    "DataConverter",
-]
+
+__all__ = ["DataCleaner", "DataConverter", "DataDownloader", "StrategyAnalyzer"]

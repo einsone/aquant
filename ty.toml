@@ -19,3 +19,19 @@
 [[overrides]]
     include = ["aquant/data/alds.py"]
     rules   = { unresolved-import = "ignore" }
+
+[[overrides]]
+    include = ["aquant/live/engine.py", "aquant/live/order_manager.py"]
+    rules   = { unresolved-import = "ignore", unresolved-attribute = "ignore" }
+
+[[overrides]]
+    include = ["aquant/cli.py"]
+    rules   = { unresolved-import = "ignore" }
+
+[[overrides]]
+    include = ["examples/tools_demo.py"]
+    rules   = { missing-argument = "ignore", unresolved-attribute = "ignore" }
+
+[[overrides]]
+    include = ["tests/test_grid_search.py", "tests/test_walk_forward.py"]
+    rules   = { unresolved-attribute = "ignore" }

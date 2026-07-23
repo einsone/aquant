@@ -2,16 +2,7 @@
 
 from unittest.mock import Mock, patch
 
-import pytest
-
-from aquant.live.alerts import (
-    AlertLevel,
-    AlertManager,
-    ConsoleAlertChannel,
-    DingTalkAlertChannel,
-    EmailAlertChannel,
-    WeChatWorkAlertChannel,
-)
+from aquant.live.alerts import AlertLevel, AlertManager, ConsoleAlertChannel, DingTalkAlertChannel, EmailAlertChannel, WeChatWorkAlertChannel
 
 
 def test_alert_levels():
@@ -36,14 +27,7 @@ def test_console_alert_channel():
 @patch("smtplib.SMTP")
 def test_email_alert_channel(mock_smtp):
     """测试邮件告警渠道"""
-    channel = EmailAlertChannel(
-        smtp_host="smtp.example.com",
-        smtp_port=587,
-        username="user@example.com",
-        password="password",
-        from_addr="user@example.com",
-        to_addrs=["recipient@example.com"],
-    )
+    channel = EmailAlertChannel(smtp_host="smtp.example.com", smtp_port=587, username="user@example.com", password="password", from_addr="user@example.com", to_addrs=["recipient@example.com"])
 
     # 模拟 SMTP 服务器
     mock_server = Mock()
@@ -60,14 +44,7 @@ def test_email_alert_channel(mock_smtp):
 @patch("smtplib.SMTP")
 def test_email_alert_with_extra(mock_smtp):
     """测试带额外信息的邮件告警"""
-    channel = EmailAlertChannel(
-        smtp_host="smtp.example.com",
-        smtp_port=587,
-        username="user@example.com",
-        password="password",
-        from_addr="user@example.com",
-        to_addrs=["recipient@example.com"],
-    )
+    channel = EmailAlertChannel(smtp_host="smtp.example.com", smtp_port=587, username="user@example.com", password="password", from_addr="user@example.com", to_addrs=["recipient@example.com"])
 
     mock_server = Mock()
     mock_smtp.return_value.__enter__.return_value = mock_server
@@ -107,10 +84,7 @@ def test_dingtalk_alert_with_signature(mock_post):
     mock_response.json.return_value = {"errcode": 0}
     mock_post.return_value = mock_response
 
-    channel = DingTalkAlertChannel(
-        webhook_url="https://oapi.dingtalk.com/robot/send?access_token=xxx",
-        secret="SECRET123",
-    )
+    channel = DingTalkAlertChannel(webhook_url="https://oapi.dingtalk.com/robot/send?access_token=xxx", secret="SECRET123")
 
     channel.send(AlertLevel.INFO, "测试", "消息")
 

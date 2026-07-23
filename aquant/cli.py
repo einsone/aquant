@@ -121,37 +121,81 @@ def cmd_optimize(args):
         module = load_strategy_module(args.strategy)
 
         # 查找优化配置
-        if not hasattr(module, "PARAM_SPACE"):
-            print("错误: 策略文件必须定义 PARAM_SPACE 参数空间")
+        if not hasattr(module, "PARAM_GRID"):
+            print("错误: 策略文件必须定义 PARAM_GRID 参数网格")
+            print("示例: PARAM_GRID = {'period': [10, 20, 30], 'threshold': [0.01, 0.02]}")
             return 1
 
-        param_space = module.PARAM_SPACE
+        param_grid = module.PARAM_GRID
+
+        # 需要策略类、数据源和配置
+        if not hasattr(module, "get_strategy_class"):
+            print("错误: 策略文件必须定义 get_strategy_class() 函数")
+            return 1
+
+        if not hasattr(module, "get_data_source"):
+            print("错误: 策略文件必须定义 get_data_source() 函数")
+            return 1
+
+        if not hasattr(module, "get_backtest_config"):
+            print("错误: 策略文件必须定义 get_backtest_config() 函数")
+            return 1
+
+        strategy_cls = module.get_strategy_class()
+        data_source = module.get_data_source()
+        config = module.get_backtest_config()
 
         if args.method == "grid":
-            from aquant.optimization.grid_search import GridSearchOptimizer
+            from aquant.optimization.grid_search import grid_search
 
-            optimizer = GridSearchOptimizer(param_space)
-            print(f"网格搜索将测试 {optimizer.total_combinations()} 组参数")
+            print("网格搜索参数组合...")
+            results = grid_search(strategy_cls=strategy_cls, param_grid=param_grid, config=config, data_source=data_source, metric=args.metric if hasattr(args, "metric") else "sharpe")
+
+            if len(results) == 0:
+                print("错误: 未生成任何结果")
+                return 1
+
+            # 找出最佳参数
+            best_row = results.sort(args.metric if hasattr(args, "metric") else "sharpe", descending=True)[0]
+
+            print("\n优化完成，最佳参数:")
+            for col in results.columns:
+                if col not in ["sharpe", "total_return", "max_drawdown", "calmar", "sortino", "annualized_return"]:
+                    print(f"  {col}: {best_row[col][0]}")
+
+            metric_name = args.metric if hasattr(args, "metric") else "sharpe"
+            print(f"\n最佳 {metric_name}: {best_row[metric_name][0]:.4f}")
 
         elif args.method == "genetic":
             from aquant.optimization.genetic_algorithm import GeneticAlgorithm
 
-            optimizer = GeneticAlgorithm(param_space, population_size=args.population, generations=args.generations)
-            print(f"遗传算法将运行 {args.generations} 代，种群大小 {args.population}")
+            # 转换 param_grid 到 param_ranges 格式
+            param_ranges = {}
+            for key, values in param_grid.items():
+                if all(isinstance(v, int) for v in values):
+                    param_ranges[key] = (min(values), max(values), int)
+                else:
+                    param_ranges[key] = (min(values), max(values), float)
+
+            ga = GeneticAlgorithm(
+                strategy_class=strategy_cls,
+                param_ranges=param_ranges,
+                data_source=data_source,
+                backtest_config=config,
+                population_size=args.population if hasattr(args, "population") else 20,
+                generations=args.generations if hasattr(args, "generations") else 10,
+                scoring=args.metric if hasattr(args, "metric") else "sharpe",
+            )
+
+            print(f"遗传算法将运行 {ga.generations} 代，种群大小 {ga.population_size}")
+            best_params = ga.run(verbose=True)
+
+            print("\n优化完成，最佳参数:")
+            for key, value in best_params.items():
+                print(f"  {key}: {value}")
 
         else:
             print(f"错误: 不支持的优化方法 {args.method}")
-            return 1
-
-        # 运行优化
-        if hasattr(module, "optimize"):
-            results = module.optimize(optimizer)
-            print("\n优化完成，最佳参数:")
-            for key, value in results["best_params"].items():
-                print(f"  {key}: {value}")
-            print(f"最佳收益: {results['best_score']:.2%}")
-        else:
-            print("错误: 策略文件必须包含 optimize() 函数")
             return 1
 
         return 0
@@ -175,17 +219,19 @@ def cmd_report(args):
         # 加载回测结果
         result_path = Path(args.result)
         with result_path.open("rb") as f:
-            result = pickle.load(f)
+            _result = pickle.load(f)  # noqa: F841
 
-        # 生成报告
-        from aquant.reporting.report_generator import ReportGenerator
+        # 生成报告 - 模块尚未实现
+        print("错误: 报告生成模块尚未实现")
+        return 1
 
-        generator = ReportGenerator()
-        output_path = args.output or "report.html"
-        generator.generate(result, output_path)
-
-        print(f"✓ 报告已生成: {output_path}")
-        return 0
+        # TODO: 实现报告生成
+        # from aquant.reporting.report_generator import ReportGenerator
+        # generator = ReportGenerator()
+        # output_path = args.output or "report.html"
+        # generator.generate(result, output_path)
+        # print(f"✓ 报告已生成: {output_path}")
+        # return 0
 
     except Exception as e:
         print(f"错误: {e}")

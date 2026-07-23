@@ -11,6 +11,7 @@ import structlog
 
 from aquant.broker.adapter import BrokerAdapter
 
+
 logger = structlog.get_logger()
 
 
@@ -29,14 +30,7 @@ class OrderStatus(str, Enum):
 class Order:
     """订单"""
 
-    def __init__(
-        self,
-        symbol: str,
-        side: str,
-        shares: int,
-        price: float | None = None,
-        order_id: str | None = None,
-    ):
+    def __init__(self, symbol: str, side: str, shares: int, price: float | None = None, order_id: str | None = None):
         self.symbol = symbol
         self.side = side
         self.shares = shares
@@ -49,10 +43,7 @@ class Order:
         self.update_time = time.time()
 
     def __repr__(self) -> str:
-        return (
-            f"Order(symbol={self.symbol}, side={self.side}, "
-            f"shares={self.shares}, status={self.status.value})"
-        )
+        return f"Order(symbol={self.symbol}, side={self.side}, shares={self.shares}, status={self.status.value})"
 
 
 class OrderManager:
@@ -62,9 +53,7 @@ class OrderManager:
         self.broker = broker
         self.orders: dict[str, Order] = {}
 
-    def submit_order(
-        self, symbol: str, side: str, shares: int, price: float | None = None
-    ) -> Order:
+    def submit_order(self, symbol: str, side: str, shares: int, price: float | None = None) -> Order:
         """提交订单
 
         Args:
@@ -80,10 +69,7 @@ class OrderManager:
 
         try:
             # 提交到券商
-            if side == "buy":
-                order_id = self.broker.buy(symbol, shares, price)
-            else:
-                order_id = self.broker.sell(symbol, shares, price)
+            order_id = self.broker.buy(symbol, shares, price) if side == "buy" else self.broker.sell(symbol, shares, price)
 
             order.order_id = order_id
             order.status = OrderStatus.SUBMITTED
@@ -92,14 +78,7 @@ class OrderManager:
             # 保存订单
             self.orders[order_id] = order
 
-            logger.info(
-                "订单已提交",
-                order_id=order_id,
-                symbol=symbol,
-                side=side,
-                shares=shares,
-                price=price,
-            )
+            logger.info("订单已提交", order_id=order_id, symbol=symbol, side=side, shares=shares, price=price)
 
         except Exception as e:
             order.status = OrderStatus.FAILED
@@ -178,9 +157,8 @@ class OrderManager:
         count = 0
 
         for order_id, order in list(self.orders.items()):
-            if order.status in [OrderStatus.SUBMITTED, OrderStatus.PARTIAL_FILLED]:
-                if self.cancel_order(order_id):
-                    count += 1
+            if order.status in [OrderStatus.SUBMITTED, OrderStatus.PARTIAL_FILLED] and self.cancel_order(order_id):
+                count += 1
 
         logger.info("批量撤销订单完成", count=count)
         return count
@@ -202,12 +180,7 @@ class OrderManager:
         Returns:
             未完成订单列表
         """
-        return [
-            order
-            for order in self.orders.values()
-            if order.status
-            in [OrderStatus.PENDING, OrderStatus.SUBMITTED, OrderStatus.PARTIAL_FILLED]
-        ]
+        return [order for order in self.orders.values() if order.status in [OrderStatus.PENDING, OrderStatus.SUBMITTED, OrderStatus.PARTIAL_FILLED]]
 
     def get_filled_orders(self) -> list[Order]:
         """获取所有已成交订单
@@ -215,9 +188,7 @@ class OrderManager:
         Returns:
             已成交订单列表
         """
-        return [
-            order for order in self.orders.values() if order.status == OrderStatus.FILLED
-        ]
+        return [order for order in self.orders.values() if order.status == OrderStatus.FILLED]
 
     def _update_order_from_broker(self, order: Order, broker_status: dict[str, Any]):
         """根据券商返回的状态更新订单
@@ -232,25 +203,13 @@ class OrderManager:
             order.status = OrderStatus.FILLED
             order.filled_shares = order.shares
             order.avg_fill_price = broker_status.get("avg_price", 0.0)
-            logger.info(
-                "订单已成交",
-                order_id=order.order_id,
-                symbol=order.symbol,
-                shares=order.shares,
-                avg_price=order.avg_fill_price,
-            )
+            logger.info("订单已成交", order_id=order.order_id, symbol=order.symbol, shares=order.shares, avg_price=order.avg_fill_price)
 
         elif status == "partial_filled":
             order.status = OrderStatus.PARTIAL_FILLED
             order.filled_shares = broker_status.get("filled_shares", 0)
             order.avg_fill_price = broker_status.get("avg_price", 0.0)
-            logger.info(
-                "订单部分成交",
-                order_id=order.order_id,
-                symbol=order.symbol,
-                filled=order.filled_shares,
-                total=order.shares,
-            )
+            logger.info("订单部分成交", order_id=order.order_id, symbol=order.symbol, filled=order.filled_shares, total=order.shares)
 
         elif status == "cancelled":
             order.status = OrderStatus.CANCELLED
@@ -258,11 +217,7 @@ class OrderManager:
 
         elif status == "rejected":
             order.status = OrderStatus.REJECTED
-            logger.warning(
-                "订单被拒绝",
-                order_id=order.order_id,
-                reason=broker_status.get("reject_reason", ""),
-            )
+            logger.warning("订单被拒绝", order_id=order.order_id, reason=broker_status.get("reject_reason", ""))
 
         order.update_time = time.time()
 
@@ -274,23 +229,8 @@ class OrderManager:
         """
         total = len(self.orders)
         filled = sum(1 for o in self.orders.values() if o.status == OrderStatus.FILLED)
-        pending = sum(
-            1
-            for o in self.orders.values()
-            if o.status in [OrderStatus.SUBMITTED, OrderStatus.PARTIAL_FILLED]
-        )
-        cancelled = sum(
-            1 for o in self.orders.values() if o.status == OrderStatus.CANCELLED
-        )
-        rejected = sum(
-            1 for o in self.orders.values() if o.status == OrderStatus.REJECTED
-        )
+        pending = sum(1 for o in self.orders.values() if o.status in [OrderStatus.SUBMITTED, OrderStatus.PARTIAL_FILLED])
+        cancelled = sum(1 for o in self.orders.values() if o.status == OrderStatus.CANCELLED)
+        rejected = sum(1 for o in self.orders.values() if o.status == OrderStatus.REJECTED)
 
-        return {
-            "total": total,
-            "filled": filled,
-            "pending": pending,
-            "cancelled": cancelled,
-            "rejected": rejected,
-            "fill_rate": filled / total if total > 0 else 0.0,
-        }
+        return {"total": total, "filled": filled, "pending": pending, "cancelled": cancelled, "rejected": rejected, "fill_rate": filled / total if total > 0 else 0.0}

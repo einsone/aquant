@@ -20,7 +20,7 @@ class SimpleStrategy(Strategy):
         if not symbols:
             return {}
         weight = 1.0 / len(symbols)
-        return {s: weight for s in symbols}
+        return dict.fromkeys(symbols, weight)
 
 
 def example_strategy_analysis():
@@ -30,11 +30,7 @@ def example_strategy_analysis():
     print("=" * 60)
 
     # 运行回测
-    config = BacktestConfig(
-        start_date=date(2023, 1, 1),
-        end_date=date(2023, 12, 31),
-        initial_capital=1_000_000,
-    )
+    config = BacktestConfig(start_date=date(2023, 1, 1), end_date=date(2023, 12, 31), initial_capital=1_000_000)
 
     symbols = ["000001.SZ", "000002.SZ", "600000.SH"]
     data_source = SyntheticDataSource()
@@ -94,12 +90,7 @@ def example_data_download():
 
     # 下载日线数据
     print("\n下载日线数据...")
-    df = downloader.download_daily_bars(
-        symbols=symbols[:3],
-        start_date=date(2023, 1, 1),
-        end_date=date(2023, 3, 31),
-        source="synthetic",
-    )
+    df = downloader.download_daily_bars(symbols=symbols[:3], start_date=date(2023, 1, 1), end_date=date(2023, 3, 31), source="synthetic")
     print(f"获取到 {len(df)} 条数据")
     print("\n数据预览:")
     print(df.head())
@@ -115,12 +106,7 @@ def example_data_cleaning():
 
     # 下载数据
     downloader = DataDownloader()
-    df = downloader.download_daily_bars(
-        symbols=["000001.SZ"],
-        start_date=date(2023, 1, 1),
-        end_date=date(2023, 3, 31),
-        source="synthetic",
-    )
+    df = downloader.download_daily_bars(symbols=["000001.SZ"], start_date=date(2023, 1, 1), end_date=date(2023, 3, 31), source="synthetic")
 
     print(f"\n原始数据: {len(df)} 行")
 

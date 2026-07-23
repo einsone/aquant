@@ -5,16 +5,20 @@
 
 import time
 from datetime import date, datetime, time as datetime_time
-from typing import Any
+from typing import TYPE_CHECKING
 
 import structlog
 
 from aquant.broker.adapter import BrokerAdapter
 from aquant.core.context import Context
 from aquant.data.source import DataSource
-from aquant.risk.guard import RiskGuard
 from aquant.strategy.base import Strategy
 from aquant.strategy.signal import Signal
+
+
+if TYPE_CHECKING:
+    from aquant.risk.guard import RiskGuard
+
 
 logger = structlog.get_logger()
 
@@ -53,12 +57,7 @@ class LiveTradingEngine:
         self.daily_start_value = 0.0
         self.running = False
 
-        logger.info(
-            "实盘交易引擎初始化",
-            dry_run=dry_run,
-            trading_time=str(trading_time),
-            max_daily_loss=f"{max_daily_loss * 100}%",
-        )
+        logger.info("实盘交易引擎初始化", dry_run=dry_run, trading_time=str(trading_time), max_daily_loss=f"{max_daily_loss * 100}%")
 
     def start(self):
         """启动实盘交易引擎"""
@@ -102,9 +101,7 @@ class LiveTradingEngine:
         target_hour = self.trading_time.hour
         target_minute = self.trading_time.minute
 
-        return (
-            current_time.hour == target_hour and current_time.minute == target_minute
-        )
+        return current_time.hour == target_hour and current_time.minute == target_minute
 
     def _execute_trading(self):
         """执行交易"""
@@ -117,16 +114,10 @@ class LiveTradingEngine:
 
             # 检查日内亏损
             current_value = self._get_total_value()
-            daily_loss = (
-                (self.daily_start_value - current_value) / self.daily_start_value
-            )
+            daily_loss = (self.daily_start_value - current_value) / self.daily_start_value
 
             if daily_loss > self.max_daily_loss:
-                logger.warning(
-                    "触发日最大亏损限制",
-                    daily_loss=f"{daily_loss * 100:.2f}%",
-                    max_daily_loss=f"{self.max_daily_loss * 100:.2f}%",
-                )
+                logger.warning("触发日最大亏损限制", daily_loss=f"{daily_loss * 100:.2f}%", max_daily_loss=f"{self.max_daily_loss * 100:.2f}%")
                 return
 
             # 构建上下文
@@ -157,9 +148,7 @@ class LiveTradingEngine:
         # 需要从 broker 获取持仓信息，构建查询服务
         raise NotImplementedError("Context 构建逻辑需要根据实际需求实现")
 
-    def _validate_signals(
-        self, signals: list[Signal], context: Context
-    ) -> list[Signal]:
+    def _validate_signals(self, signals: list[Signal], context: Context) -> list[Signal]:
         """风控检查信号"""
         validated = []
 
@@ -168,11 +157,7 @@ class LiveTradingEngine:
             passed = True
             for guard in self.risk_guards:
                 if not guard.check(signal, context):
-                    logger.warning(
-                        "信号被风控拒绝",
-                        symbol=signal.symbol,
-                        guard=guard.__class__.__name__,
-                    )
+                    logger.warning("信号被风控拒绝", symbol=signal.symbol, guard=guard.__class__.__name__)
                     passed = False
                     break
 
@@ -205,11 +190,7 @@ class LiveTradingEngine:
             if delta > 0:
                 # 买入
                 if self.dry_run:
-                    logger.info(
-                        "[演练模式] 买入订单",
-                        symbol=symbol,
-                        shares=delta,
-                    )
+                    logger.info("[演练模式] 买入订单", symbol=symbol, shares=delta)
                 else:
                     order_id = self.broker.buy(symbol=symbol, shares=delta)
                     logger.info("买入订单已提交", symbol=symbol, shares=delta, order_id=order_id)
@@ -217,11 +198,7 @@ class LiveTradingEngine:
             elif delta < 0:
                 # 卖出
                 if self.dry_run:
-                    logger.info(
-                        "[演练模式] 卖出订单",
-                        symbol=symbol,
-                        shares=-delta,
-                    )
+                    logger.info("[演练模式] 卖出订单", symbol=symbol, shares=-delta)
                 else:
                     order_id = self.broker.sell(symbol=symbol, shares=-delta)
                     logger.info("卖出订单已提交", symbol=symbol, shares=-delta, order_id=order_id)

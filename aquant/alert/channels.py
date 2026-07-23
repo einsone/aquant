@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import smtplib
 from email.mime.text import MIMEText
 from typing import TYPE_CHECKING
@@ -34,16 +33,7 @@ class EmailChannel:
         )
     """
 
-    def __init__(
-        self,
-        smtp_host: str,
-        smtp_port: int,
-        username: str,
-        password: str,
-        from_addr: str,
-        to_addrs: list[str],
-        use_tls: bool = True,
-    ):
+    def __init__(self, smtp_host: str, smtp_port: int, username: str, password: str, from_addr: str, to_addrs: list[str], use_tls: bool = True):
         self.smtp_host = smtp_host
         self.smtp_port = smtp_port
         self.username = username

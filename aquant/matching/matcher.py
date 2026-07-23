@@ -123,7 +123,8 @@ class Matcher:
         # 按方向选估算价：买入用含买入滑点的价格，卖出用含卖出滑点的价格，
         # 保证 target_shares 与实际结算价基准一致，避免卖出时股数偏多或买入时超额。
         # weight=0 清仓时 target_shares=0，est_fill_price 不参与分子，用卖出价占位无影响。
-        est_fill_price = self.cost_model.sell_fill_price(bar.open) if side == "sell" else self.cost_model.buy_fill_price(bar.open)
+        bar_open = bar.open  # 优化：缓存属性访问
+        est_fill_price = self.cost_model.sell_fill_price(bar_open) if side == "sell" else self.cost_model.buy_fill_price(bar_open)
         target_shares = math.floor(base_value * signal.weight / est_fill_price / 100) * 100
 
         # 调仓阈值检查：weight=0 清仓指令直接放行；其余按 current_weight 与目标的偏差判断
@@ -144,23 +145,29 @@ class Matcher:
 
         order = Order(symbol=signal.symbol, side=side, shares=abs(delta_shares), liquidate=(target_shares == 0))
 
-        passed = all(g.check(order, bar, portfolio) for g in self._guards)
-        if not passed or order.shares <= 0:
+        # 优化：提前检查 shares 避免不必要的 guard 调用
+        if order.shares <= 0:
             return
 
+        passed = all(g.check(order, bar, portfolio) for g in self._guards)
+        if not passed:
+            return
+
+        # 优化：减少重复的属性访问
+        order_shares = order.shares
         if side == "buy":
-            fill_price = self.cost_model.buy_fill_price(bar.open)
-            value = order.shares * fill_price
+            fill_price = self.cost_model.buy_fill_price(bar_open)
+            value = order_shares * fill_price
             commission, stamp_duty = self.cost_model.compute_buy(value)
         else:
-            fill_price = self.cost_model.sell_fill_price(bar.open)
-            value = order.shares * fill_price
+            fill_price = self.cost_model.sell_fill_price(bar_open)
+            value = order_shares * fill_price
             commission, stamp_duty = self.cost_model.compute_sell(value)
 
-        portfolio.apply_fill(symbol=order.symbol, side=order.side, shares=order.shares, fill_price=fill_price, commission=commission, stamp_duty=stamp_duty, locked=order.locked, dt=dt)
+        portfolio.apply_fill(symbol=order.symbol, side=order.side, shares=order_shares, fill_price=fill_price, commission=commission, stamp_duty=stamp_duty, locked=order.locked, dt=dt)
 
         # 发布订单成交事件（如果消息总线可用）
         if self._bus is not None:
             from aquant.events.event import OrderFilledEvent
 
-            self._bus.publish("order.filled", OrderFilledEvent(date=dt, symbol=order.symbol, side=order.side, shares=order.shares, fill_price=fill_price, commission=commission, stamp_duty=stamp_duty))
+            self._bus.publish("order.filled", OrderFilledEvent(date=dt, symbol=order.symbol, side=order.side, shares=order_shares, fill_price=fill_price, commission=commission, stamp_duty=stamp_duty))

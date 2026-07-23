@@ -6,10 +6,11 @@
 import cProfile
 import pstats
 import time
+from collections.abc import Callable
 from functools import wraps
 from io import StringIO
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import structlog
 

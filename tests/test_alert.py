@@ -120,14 +120,7 @@ def test_wecom_channel_structure():
 
 def test_email_channel_structure():
     """测试邮件渠道结构（不实际发送）"""
-    channel = EmailChannel(
-        smtp_host="smtp.gmail.com",
-        smtp_port=587,
-        username="test@example.com",
-        password="password",
-        from_addr="test@example.com",
-        to_addrs=["alert@example.com"],
-    )
+    channel = EmailChannel(smtp_host="smtp.gmail.com", smtp_port=587, username="test@example.com", password="password", from_addr="test@example.com", to_addrs=["alert@example.com"])
 
     assert channel.smtp_host == "smtp.gmail.com"
     assert channel.smtp_port == 587

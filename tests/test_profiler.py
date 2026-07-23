@@ -1,9 +1,6 @@
 """测试性能分析工具"""
 
 import time
-from pathlib import Path
-
-import pytest
 
 from aquant.tools.profiler import PerformanceProfiler, Timer, profile_function, time_function
 

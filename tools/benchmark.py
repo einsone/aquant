@@ -3,7 +3,6 @@
 对比不同配置下的回测性能。
 """
 
-import time
 from datetime import date
 
 from aquant import BacktestConfig, Engine, Signal, Strategy
@@ -34,9 +33,9 @@ def benchmark_baseline(symbols: int = 10, days: int = 252, log_level: str = "WAR
         days: 交易日数量
         log_level: 日志级别
     """
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"基准测试: {symbols} 只股票, {days} 个交易日")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     # 准备数据
     symbol_list = [f"{i:06d}.SZ" for i in range(1, symbols + 1)]
@@ -44,13 +43,7 @@ def benchmark_baseline(symbols: int = 10, days: int = 252, log_level: str = "WAR
     strategy = SimpleStrategy(symbols=symbol_list)
 
     # 配置
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 12, 31),
-        initial_capital=1_000_000,
-        log_level=log_level,
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 12, 31), initial_capital=1_000_000, log_level=log_level, show_progress=False)
 
     # 运行基准测试
     timer = Timer()
@@ -75,22 +68,16 @@ def benchmark_baseline(symbols: int = 10, days: int = 252, log_level: str = "WAR
 
 def benchmark_with_profiler(symbols: int = 10, days: int = 252):
     """使用性能分析器的基准测试"""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"性能分析: {symbols} 只股票, {days} 个交易日")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     # 准备数据
     symbol_list = [f"{i:06d}.SZ" for i in range(1, symbols + 1)]
     data_source = SyntheticDataSource(symbols=symbol_list, days=days)
     strategy = SimpleStrategy(symbols=symbol_list)
 
-    config = BacktestConfig(
-        start=date(2023, 1, 1),
-        end=date(2023, 12, 31),
-        initial_capital=1_000_000,
-        log_level="WARNING",
-        show_progress=False,
-    )
+    config = BacktestConfig(start=date(2023, 1, 1), end=date(2023, 12, 31), initial_capital=1_000_000, log_level="WARNING", show_progress=False)
 
     # 使用性能分析器
     profiler = PerformanceProfiler()
@@ -111,9 +98,9 @@ def benchmark_with_profiler(symbols: int = 10, days: int = 252):
 
 def benchmark_scale(max_symbols: int = 50, step: int = 10):
     """规模测试：测试不同股票数量下的性能"""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("规模测试：不同股票数量的性能对比")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     results = []
 
@@ -121,7 +108,7 @@ def benchmark_scale(max_symbols: int = 50, step: int = 10):
         time_taken = benchmark_baseline(symbols=n, days=252, log_level="ERROR")
         results.append((n, time_taken))
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("规模测试结果汇总:")
     print(f"{'股票数':<10} {'耗时(秒)':<15} {'速度(天/秒)':<15}")
     print("-" * 40)

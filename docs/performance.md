@@ -10,20 +10,79 @@
 
 | 场景 | 性能指标 |
 |------|---------|
-| 单只股票，1 年 | 500+ 天/秒 |
-| 10 只股票，1 年 | 200+ 天/秒 |
-| 单只股票，3 年 | 400+ 天/秒 |
-| 高频调仓策略 | 100+ 笔/秒 |
+| 10 只股票，252 交易日 | 6000+ 天/秒 |
+| 20 只股票，252 交易日 | 5000+ 天/秒 |
+| 30 只股票，252 交易日 | 4000+ 天/秒 |
+| 50 只股票，252 交易日 | 2600+ 天/秒 |
 
 ### 运行基准测试
 
 ```bash
-uv run python benchmarks/performance_benchmark.py
+# 基准测试：10 只股票，252 个交易日
+uv run python tools/benchmark.py baseline 10 252
+
+# 性能分析：10 只股票，252 个交易日
+uv run python tools/benchmark.py profile 10 252
+
+# 规模测试：测试不同股票数量的性能
+uv run python tools/benchmark.py scale 50
 ```
 
 ## 性能分析工具
 
-### 1. cProfile 性能分析
+### 1. 函数性能分析装饰器
+
+使用 `@profile_function` 装饰器分析函数性能：
+
+```python
+from aquant.tools.profiler import profile_function
+
+@profile_function
+def my_strategy_logic():
+    # 你的代码
+    pass
+```
+
+### 2. 代码块性能分析
+
+使用 `PerformanceProfiler` 分析代码块：
+
+```python
+from aquant.tools.profiler import PerformanceProfiler
+
+profiler = PerformanceProfiler()
+
+with profiler:
+    result = engine.run()
+
+# 打印最耗时的 20 个函数
+profiler.print_top(20)
+
+# 保存详细报告
+profiler.save_report("performance_report.txt")
+```
+
+### 3. 计时器
+
+使用 `Timer` 测量多个阶段的耗时：
+
+```python
+from aquant.tools.profiler import Timer
+
+timer = Timer()
+
+timer.start("data_loading")
+# 加载数据
+timer.stop("data_loading")
+
+timer.start("computation")
+# 计算
+timer.stop("computation")
+
+timer.print_summary()
+```
+
+### 4. cProfile 性能分析
 
 识别回测引擎的热点路径：
 
@@ -37,7 +96,7 @@ uv run python benchmarks/profile_engine.py
 uv run snakeviz performance_profile.stats
 ```
 
-### 2. 并行回测
+### 5. 并行回测
 
 对比多个策略时使用并行回测：
 
@@ -45,9 +104,6 @@ uv run snakeviz performance_profile.stats
 uv run python benchmarks/parallel_backtest.py
 ```
 
-## 优化策略
-
-### 1. 数据源优化
 
 #### 使用数据缓存
 

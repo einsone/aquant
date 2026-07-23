@@ -30,7 +30,7 @@
 
 [[overrides]]
     include = ["aquant/optimization/grid_search.py", "aquant/optimization/walk_forward.py"]
-    rules   = { invalid-assignment = "ignore" }
+    rules   = { invalid-assignment = "ignore", unresolved-attribute = "ignore" }
 
 [[overrides]]
     include = ["aquant/tools/data_tools.py"]

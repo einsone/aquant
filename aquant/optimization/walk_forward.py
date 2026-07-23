@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 def _run_single(strategy_cls: type[Strategy], params: dict, fold_config: BacktestConfig, data_source: DataSource) -> dict:
     strategy = strategy_cls(**params)
     # 注入 data_source 和 universe，策略可能需要访问
-    if not hasattr(strategy, "data_source"):
+    if not hasattr(strategy, "data_source") or strategy.data_source is None:
         strategy.data_source = data_source  # type: ignore[attr-defined]
     if not hasattr(strategy, "universe") and hasattr(fold_config, "universe"):
         strategy.universe = fold_config.universe  # type: ignore[attr-defined]

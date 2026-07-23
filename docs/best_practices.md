@@ -81,7 +81,7 @@ class MyStrategy(Strategy):
         # 一次性加载所有需要的股票
         all_symbols = set1 | set2 | set3
         bars = self.data_source.load_bars(context.current_date, all_symbols)
-        
+
         # 按需筛选
         bars1 = {k: v for k, v in bars.items() if k in set1}
         bars2 = {k: v for k, v in bars.items() if k in set2}
@@ -377,7 +377,7 @@ def on_bar(self, context: Context) -> list[Signal]:
 def on_bar(self, context: Context) -> list[Signal]:
     # 一次性加载所有数据
     bars = self.data_source.load_bars(context.current_date, set(self.symbols))
-    
+
     # 批量计算动量
     signals = [
         Signal(symbol=symbol, weight=1.0/len(self.symbols))

@@ -13,6 +13,8 @@
 - 🛡️ **可插拔风控** - 内置多种风控规则，支持自定义
 - 📊 **完整分析** - 提供 20+ 绩效指标和可视化报告
 - 🔧 **高度可扩展** - 插件式架构，支持自定义数据源、交易规则等
+- 🌐 **多资产支持** - 支持股票、期货、期权等多种资产类型
+- 🔌 **实盘交易** - 提供券商适配器接口，支持实盘交易
 - 📚 **中文文档** - 完整的中文文档和示例
 
 ## 🚀 快速开始
@@ -186,6 +188,63 @@ engine = Engine(strategy, data_source, config, risk_manager=risk_manager)
 
 ## 🔧 高级特性
 
+### 多资产支持
+
+框架支持股票、期货、期权等多种资产类型：
+
+```python
+from aquant.market.bar import AssetType
+
+# DayBar 自动识别资产类型
+bar = DayBar(
+    symbol="IF2312",
+    date=date(2023, 12, 15),
+    open=3800.0,
+    close=3850.0,
+    high=3900.0,
+    low=3750.0,
+    volume=100000.0,
+    up_limit=4000.0,
+    down_limit=3600.0,
+    is_halted=False,
+    asset_type=AssetType.FUTURE  # 期货
+)
+```
+
+### 实盘交易
+
+框架提供券商适配器接口，支持实盘交易：
+
+```python
+from aquant.broker.adapter import BrokerAdapter, OrderSide, OrderType
+from aquant.broker.simulated import SimulatedBroker
+
+# 使用模拟券商测试
+broker = SimulatedBroker(initial_cash=100000.0)
+
+# 提交订单
+order = broker.submit_order(
+    symbol="AAPL",
+    side=OrderSide.BUY,
+    quantity=100,
+    price=150.0,
+    order_type=OrderType.LIMIT
+)
+
+# 查询持仓
+positions = broker.get_positions()
+
+# 查询资金
+cash = broker.get_cash()
+total_value = broker.get_total_value()
+```
+
+**对接真实券商**：
+
+1. 继承 `BrokerAdapter` 基类
+2. 实现 `submit_order`、`cancel_order`、`get_positions` 等方法
+3. 参考 `examples/live_trading.py` 了解完整流程
+
 ### 多品种支持
 
 支持不同品种的交易规则：
@@ -277,7 +336,13 @@ aquant/
 查看 `examples/` 目录获取更多示例：
 
 - `demo.py` - 基础回测示例
-- `momentum_acceleration.py` - 动量加速策略
+- `dual_moving_average.py` - 双均线策略
+- `bollinger_bands.py` - 布林带策略
+- `risk_controlled_momentum.py` - 风控动量策略
+- `live_trading.py` - 实盘交易示例
+- `benchmark.py` - 性能基准测试
+
+详细说明请参考 [示例文档](docs/examples.md)。
 
 ## ❓ 常见问题（FAQ）
 
@@ -342,7 +407,33 @@ engine = Engine(strategy, data_source, config, risk_manager=risk_manager)
 
 ### 支持多品种回测吗？
 
-目前框架主要针对股票回测优化。多品种（股票+期货）支持在规划中。
+支持。框架已添加多资产类型支持（股票、期货、期权）：
+
+```python
+from aquant.market.bar import AssetType
+
+# 创建期货行情数据
+bar = DayBar(
+    symbol="IF2312",
+    asset_type=AssetType.FUTURE,
+    # ... 其他字段
+)
+```
+
+配合不同的交易规则（`StockRules`、`FuturesRules`）可以回测不同品种。
+
+### 如何进行实盘交易？
+
+框架提供券商适配器接口：
+
+1. 对于测试和演示，使用内置的 `SimulatedBroker`
+2. 对于真实交易，继承 `BrokerAdapter` 实现具体券商接口
+
+查看 `examples/live_trading.py` 了解完整示例：
+
+```bash
+uv run python examples/live_trading.py
+```
 
 ### 如何获取帮助？
 

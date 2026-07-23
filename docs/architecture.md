@@ -43,7 +43,8 @@ aquant/
 ├── events/         # 事件总线
 ├── risk/           # 风控管理
 ├── analytics/      # 绩效分析
-└── adjustment/     # 复权处理
+├── adjustment/     # 复权处理
+└── broker/         # 实盘交易接口
 ```
 
 ### 核心组件
@@ -346,6 +347,99 @@ class DataManager:
             self.load_bars(dt, symbols)
 ```
 
+### 6. 实盘交易接口 - BrokerAdapter
+
+**问题**：回测策略需要切换到实盘交易
+
+**方案**：BrokerAdapter 抽象层
+
+```python
+class BrokerAdapter(ABC):
+    """券商适配器抽象基类"""
+
+    @abstractmethod
+    def submit_order(self, symbol: str, side: OrderSide, quantity: int,
+                     price: float | None, order_type: OrderType) -> Order:
+        """提交订单"""
+        pass
+
+    @abstractmethod
+    def get_positions(self) -> dict[str, Position]:
+        """查询持仓"""
+        pass
+
+    @abstractmethod
+    def get_cash(self) -> float:
+        """查询可用资金"""
+        pass
+```
+
+**内置实现**：
+
+- `SimulatedBroker`: 模拟券商（用于测试）
+
+**使用方式**：
+
+```python
+# 模拟交易
+broker = SimulatedBroker(initial_cash=100000.0)
+
+# 提交订单
+order = broker.submit_order(
+    symbol="AAPL",
+    side=OrderSide.BUY,
+    quantity=100,
+    price=150.0,
+    order_type=OrderType.LIMIT
+)
+
+# 查询持仓
+positions = broker.get_positions()
+```
+
+**对接真实券商**：
+
+1. 继承 `BrokerAdapter` 基类
+2. 实现所有抽象方法
+3. 处理订单状态、T+1 限制等
+4. 参考 `examples/live_trading.py`
+
+### 7. 多资产支持 - AssetType
+
+**问题**：需要支持股票、期货、期权等不同资产类型
+
+**方案**：DayBar 添加 asset_type 字段
+
+```python
+class AssetType(str, Enum):
+    STOCK = "STOCK"    # 股票
+    FUTURE = "FUTURE"  # 期货
+    OPTION = "OPTION"  # 期权
+
+@dataclass(frozen=True)
+class DayBar:
+    symbol: str
+    date: date
+    # ... 其他字段
+    asset_type: AssetType = AssetType.STOCK  # 默认股票
+```
+
+**向后兼容**：
+
+- 默认值为 `AssetType.STOCK`
+- 现有代码无需修改
+- 新代码可显式指定资产类型
+
+**配合交易规则**：
+
+```python
+# 期货回测（T+0）
+if bar.asset_type == AssetType.FUTURE:
+    trading_rules = FuturesRules()
+else:
+    trading_rules = StockRules()
+```
+
 ## 设计模式应用
 
 | 模式 | 应用场景 | 组件 |
@@ -388,6 +482,7 @@ class DataManager:
 4. **Guard**: 自定义订单检查
 5. **TradingRules**: 自定义交易规则
 6. **Event Handler**: 自定义事件处理器
+7. **BrokerAdapter**: 自定义券商接口
 
 ## 限制与权衡
 
@@ -423,20 +518,42 @@ class DataManager:
 | 学习曲线 | 平缓 | 陡峭 | 陡峭 | 陡峭 |
 | 类型安全 | ✅ | ❌ | ❌ | 部分 |
 | 中文文档 | ✅ | ❌ | ❌ | ✅ |
-| 实盘对接 | ❌ | ✅ | ❌ | ✅ |
+| 实盘接口 | ✅ (抽象层) | ✅ | ❌ | ✅ |
+| 多资产支持 | ✅ | ✅ | ✅ | ✅ |
 
 ## 未来规划
 
 1. **性能优化**
    - Numba 加速关键计算
    - 并行回测多个策略
+   - 进度条显示
 
 2. **功能扩展**
    - 分钟级回测
    - 做空支持
    - 期权支持
+   - 更多券商适配器
 
 3. **生态建设**
    - 更多数据源适配器
    - 策略模板库
    - 因子库集成
+
+## 测试覆盖
+
+框架包含完整的单元测试：
+
+- **82 个单元测试**：覆盖核心模块
+- **测试模块**：
+  - `test_broker.py`: BrokerAdapter 和 SimulatedBroker
+  - `test_asset_type.py`: AssetType 和向后兼容性
+  - `test_data_manager.py`: 数据缓存
+  - `test_query.py`: CQRS 查询服务
+  - `test_risk.py`: 风控规则
+  - `test_trading_rules.py`: 交易规则
+
+运行测试：
+
+```bash
+uv run pytest tests/ -v
+```

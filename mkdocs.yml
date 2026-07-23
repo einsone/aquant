@@ -1,0 +1,83 @@
+site_name: Aquant 文档
+site_description: 轻量级 Python 量化回测框架
+site_author: Aquant Team
+repo_url: https://github.com/yourusername/aquant
+repo_name: aquant
+
+theme:
+  name: material
+  language: zh
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: 切换到深色模式
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: 切换到浅色模式
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search:
+      lang: zh
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_signature_annotations: true
+            separate_signature: true
+            merge_init_into_class: true
+            docstring_section_style: table
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - attr_list
+  - md_in_html
+
+nav:
+  - 首页: index.md
+  - 快速开始:
+    - 安装: getting-started/installation.md
+    - 基础示例: getting-started/basic-example.md
+  - 用户指南:
+    - 核心概念: guide/concepts.md
+    - 策略开发: guide/strategy.md
+    - 数据源: guide/data-source.md
+    - 风控管理: guide/risk-management.md
+    - 实盘交易: guide/live-trading.md
+  - API 参考:
+    - 核心引擎: api/engine.md
+    - 策略基类: api/strategy.md
+    - 数据源: api/data-source.md
+    - 组合管理: api/portfolio.md
+    - 订单撮合: api/matching.md
+    - 风控管理: api/risk.md
+    - 实盘交易: api/broker.md
+    - 分析工具: api/analytics.md
+  - 架构设计: architecture.md
+  - 示例: examples.md

@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any
 from pydantic import BaseModel, Field, field_validator
 
 from aquant.adjustment.adjuster import Adjuster
-from aquant.core.context import Context
 from aquant.data.source import DataSource
 from aquant.events.bus import MessageBus
 from aquant.events.event import AdjustmentEvent, DayStartEvent, DelistEvent, FillEvent, Phase, PortfolioValuationEvent, SignalEvent, ValuationEvent
@@ -16,6 +15,10 @@ from aquant.matching.cost import CostModel
 from aquant.matching.matcher import Matcher
 from aquant.portfolio.portfolio import Portfolio
 from aquant.strategy.signal import Signal
+
+
+if TYPE_CHECKING:
+    from aquant.core.context import Context
 
 
 logger = get_logger(__name__)
@@ -40,6 +43,7 @@ class BacktestConfig(BaseModel):
     rebalance_threshold: float = Field(default=0.0, ge=0, description="调仓阈值。目标权重与当前权重之差小于此值时不触发交易，避免微小信号变化产生无效换手。默认 0.0（每次都调仓）。")
     volume_cap_ratio: float = Field(default=1.0, gt=0, le=1, description="单笔委托量占当日总成交量的上限比例。默认 1.0（不限制）。设为较小值可模拟大资金的市场冲击约束。")
     benchmark: Any = Field(default=None, description="基准收益序列，类型为 pl.DataFrame，须含 date 和 return 两列。用于计算 Alpha、Beta、信息比率等相对指标。为 None 时跳过。")
+    show_progress: bool = Field(default=True, description="是否显示回测进度条。默认 True。")
 
     @field_validator("end")
     @classmethod
@@ -139,6 +143,11 @@ class Engine:
 
         self._query_service = PortfolioQueryService(daily_nav=self._portfolio._daily_nav, trade_log=self._portfolio.trade_log)
 
+        # 性能优化：Context 对象池
+        from aquant.core.context_pool import ContextPool
+
+        self._context_pool = ContextPool(max_size=10)
+
     def _build_queue(self, trading_days: list[date]) -> EventQueue:
         q = EventQueue()
         for dt in trading_days:
@@ -165,8 +174,8 @@ class Engine:
         positions = self._portfolio.position_views()
         total_value = self._portfolio.cash + sum(p.shares * p.last_close for p in positions.values())
 
-        # 性能优化：复用 QueryService 对象
-        return Context(current_date=dt, positions=positions, cash=self._portfolio.cash, total_value=total_value, query=self._query_service)
+        # 性能优化：从对象池获取 Context，复用对象减少内存分配
+        return self._context_pool.get(current_date=dt, positions=positions, cash=self._portfolio.cash, total_value=total_value, query=self._query_service)
 
     def run(self) -> BacktestResult:
         total_days = len(self._trading_days)
@@ -176,13 +185,30 @@ class Engine:
         self._strategy.on_start(start_context)
         logger.info("回测开始", strategy=type(self._strategy).__name__)
 
+        # 创建进度条
+        pbar = None
+        if self._config.show_progress:
+            try:
+                from tqdm import tqdm
+
+                pbar = tqdm(total=total_days, desc="回测进度", unit="天", ncols=100)
+            except ImportError:
+                logger.warning("未安装 tqdm，无法显示进度条")
+
         day_idx = 0
         for event in self._queue:
             if event.phase == Phase.DAY_START:
                 self._portfolio.reset_tradeable()
                 self._day_is_warmup = self._warmup_remaining > 0
                 day_idx += 1
-                if day_idx % log_interval == 0 or day_idx == total_days:
+
+                # 更新进度条
+                if pbar:
+                    pbar.update(1)
+                    pbar.set_postfix({"日期": str(event.date), "净值": f"{self._portfolio.total_value:,.0f}"})
+
+                # 日志输出（进度条模式下减少日志）
+                if not pbar and (day_idx % log_interval == 0 or day_idx == total_days):
                     pct = day_idx / total_days * 100
                     logger.info("回测进度", date=str(event.date), day=day_idx, total=total_days, pct=f"{pct:.0f}%", warmup=self._day_is_warmup, portfolio_value=round(self._portfolio.total_value, 2))
 
@@ -236,6 +262,10 @@ class Engine:
                     # 发布组合估值事件
                     self._bus.publish("portfolio.valuation", PortfolioValuationEvent(date=event.date, total_value=self._portfolio.total_value, cash=self._portfolio.cash, position_count=len(self._portfolio.positions)))
                 self._day_bars = {}  # 无论是否预热，每日清空，防止 stale bars 泄漏到次日
+
+        # 关闭进度条
+        if pbar:
+            pbar.close()
 
         end_context = self._build_context(self._trading_days[-1])
         self._strategy.on_end(end_context)

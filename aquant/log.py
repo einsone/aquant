@@ -3,14 +3,20 @@
 基于 structlog 实现, 兼容标准库 logging.
 首次 import 自动以默认配置初始化, 无需手动调用 setup_logging().
 
+环境变量配置：
+    AQUANT_LOG_LEVEL: 日志级别 (DEBUG/INFO/WARNING/ERROR), 默认 INFO
+    AQUANT_LOG_FORMAT: 日志格式 (json/logfmt), 默认 logfmt
+    AQUANT_LOG_ENV: 运行环境 (dev/prod), 默认 dev
+
 Usage:
-    from warehouse.log import get_logger
+    from aquant.log import get_logger
 
     log = get_logger(__name__)
     log.info("request started", method="GET", path="/api")
 """
 
 import logging
+import os
 import sys
 from enum import StrEnum
 from typing import Any
@@ -63,7 +69,7 @@ def setup_logging(*, env: Env | str = Env.DEV, fmt: LogFormat | str = LogFormat.
     Args:
         env: 运行环境, "dev" 或 "prod"
         fmt: 日志格式, "json" 或 "logfmt"
-        level: 日志级别
+        level: 日志级别 (DEBUG/INFO/WARNING/ERROR 或对应的整数)
     """
     env = Env(env) if isinstance(env, str) else env
     fmt = LogFormat(fmt) if isinstance(fmt, str) else fmt
@@ -134,7 +140,12 @@ def clear_contextvars() -> None:
 
 # 首次 import 时自动配置 (默认值), 后续 import 不重复执行
 if not _configured:
-    setup_logging()
+    # 从环境变量读取配置
+    log_level = os.environ.get("AQUANT_LOG_LEVEL", "INFO").upper()
+    log_format = os.environ.get("AQUANT_LOG_FORMAT", "logfmt").lower()
+    log_env = os.environ.get("AQUANT_LOG_ENV", "dev").lower()
+
+    setup_logging(env=log_env, fmt=log_format, level=log_level)
 
     # httpx 日志过于频繁, 仅保留 WARNING 及以上
     logging.getLogger("httpx").setLevel(logging.WARNING)

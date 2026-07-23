@@ -29,6 +29,7 @@ uv run aquant validate my_strategy.py
 ```
 
 验证内容：
+
 - 是否包含 `Strategy` 类定义
 - 是否包含 `main()` 函数
 - 基本的语法检查
@@ -48,6 +49,7 @@ uv run aquant optimize examples/dual_moving_average.py \
 ```
 
 参数说明：
+
 - `--method grid`: 使用网格搜索
 - `--param NAME:VALUE1,VALUE2,...`: 定义参数范围（多个值）
 - `--metric METRIC`: 优化目标（sharpe, total_return, calmar 等）
@@ -65,6 +67,7 @@ uv run aquant optimize examples/dual_moving_average.py \
 ```
 
 参数说明：
+
 - `--method genetic`: 使用遗传算法
 - `--param NAME:MIN-MAX`: 定义参数范围（区间）
 - `--generations N`: 迭代代数（默认50）
@@ -82,6 +85,7 @@ uv run aquant optimize examples/dual_moving_average.py \
 ```
 
 参数说明：
+
 - `--method walk-forward`: 使用 walk-forward 分析
 - `--train-period N`: 训练期天数
 - `--test-period N`: 测试期天数
@@ -95,10 +99,12 @@ uv run aquant report result.pkl --output report.html
 ```
 
 参数说明：
+
 - `result.pkl`: 回测结果文件（pickle 格式）
 - `--output`: 输出文件路径（默认 report.html）
 
 报告包含：
+
 - 净值曲线图
 - 收益统计
 - 风险指标

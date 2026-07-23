@@ -19,7 +19,7 @@ aquant 采用**信号权重模式**，策略只需返回目标持仓权重，框
 
 回测引擎采用事件驱动架构：
 
-```
+```text
 数据源 → 事件流 → 策略 → 信号 → 风控 → 订单 → 撮合 → 持仓更新
 ```
 
@@ -224,7 +224,7 @@ result = engine.run()
 
 ### 1. 初始化阶段
 
-```
+```text
 DataSource.load_calendar() → 获取交易日列表
 DataSource.load_bars() → 预加载 warmup_period 天数据
 Strategy.__init__() → 初始化策略状态
@@ -234,7 +234,7 @@ Strategy.__init__() → 初始化策略状态
 
 每个交易日重复以下流程：
 
-```
+```text
 1. 加载当日行情 → DataSource.load_bars(today, symbols)
 2. 调用策略 → Strategy.on_bar(context) → list[Signal]
 3. 风控检查 → RiskGuard.check(signal) → bool
@@ -246,7 +246,7 @@ Strategy.__init__() → 初始化策略状态
 
 ### 3. 结果分析
 
-```
+```text
 Portfolio → BacktestResult → 计算指标 → 生成报告
 ```
 

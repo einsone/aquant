@@ -34,7 +34,8 @@ for date, ret in monthly_returns.items():
 ```
 
 输出示例：
-```
+
+```text
 2023-01: 2.35%
 2023-02: -0.87%
 2023-03: 1.45%
@@ -93,7 +94,8 @@ print(f"盈亏比: {win_loss['profit_factor']:.2f}")
 ```
 
 输出示例：
-```
+
+```text
 总交易次数: 45
 盈利次数: 28
 亏损次数: 17

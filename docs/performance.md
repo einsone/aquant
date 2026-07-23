@@ -87,6 +87,7 @@ for dt in calendar:
 #### 避免重复计算
 
 **不好的做法：**
+
 ```python
 def on_bar(self, context: Context) -> list[Signal]:
     for symbol in self.universe:
@@ -96,6 +97,7 @@ def on_bar(self, context: Context) -> list[Signal]:
 ```
 
 **好的做法：**
+
 ```python
 def __init__(self):
     self.ma_cache = {}  # 缓存计算结果
@@ -115,6 +117,7 @@ def on_bar(self, context: Context) -> list[Signal]:
 #### 减少数据查询次数
 
 **不好的做法：**
+
 ```python
 def on_bar(self, context: Context) -> list[Signal]:
     for symbol in self.universe:
@@ -123,6 +126,7 @@ def on_bar(self, context: Context) -> list[Signal]:
 ```
 
 **好的做法：**
+
 ```python
 def on_bar(self, context: Context) -> list[Signal]:
     # 批量查询一次
@@ -298,6 +302,7 @@ class PerformanceMetrics:
 **症状：** 回测启动时间长，大部分时间在加载数据
 
 **解决方案：**
+
 - 使用数据缓存
 - 预加载常用数据
 - 使用更快的数据源（本地文件 vs 远程 API）
@@ -307,6 +312,7 @@ class PerformanceMetrics:
 **症状：** 每个交易日处理时间长
 
 **解决方案：**
+
 - 缓存中间计算结果
 - 使用向量化计算（NumPy）
 - 减少循环和重复计算
@@ -316,6 +322,7 @@ class PerformanceMetrics:
 **症状：** 回测过程中内存持续增长
 
 **解决方案：**
+
 - 限制缓存大小
 - 只保留必要的历史数据
 - 定期清理不需要的对象
@@ -325,6 +332,7 @@ class PerformanceMetrics:
 **症状：** 并行回测速度提升不明显
 
 **解决方案：**
+
 - 确保每个任务足够重（避免进程创建开销）
 - 避免共享状态（使用独立的数据源实例）
 - 合理设置 worker 数量（通常等于 CPU 核心数）

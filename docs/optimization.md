@@ -197,6 +197,7 @@ if train_test_gap.mean() > 0.5:
 ### 1. 参数范围选择
 
 **不要过宽：**
+
 ```python
 # ❌ 范围过宽，搜索时间长且可能找到无意义的极端值
 param_grid = {
@@ -205,6 +206,7 @@ param_grid = {
 ```
 
 **合理范围：**
+
 ```python
 # ✅ 基于经验和理论选择合理范围
 param_grid = {
@@ -215,6 +217,7 @@ param_grid = {
 ### 2. 避免过拟合
 
 **使用 Walk-forward：**
+
 ```python
 # 验证参数在样本外的表现
 wf_results = walk_forward(
@@ -232,6 +235,7 @@ if (wf_results["total_return"] > 0).mean() > 0.7:
 ```
 
 **留出验证集：**
+
 ```python
 # 训练集：2020-2022
 train_config = BacktestConfig(
@@ -334,11 +338,13 @@ fine_results = grid_search(...)
 ### Q: 网格搜索 vs 遗传算法，如何选择？
 
 **网格搜索：**
+
 - 参数少（2-3 个）
 - 每个参数候选值少（< 10 个）
 - 需要确保找到全局最优
 
 **遗传算法：**
+
 - 参数多（> 3 个）
 - 参数空间大（候选值多或连续参数）
 - 可以接受近似最优解
@@ -346,6 +352,7 @@ fine_results = grid_search(...)
 ### Q: Walk-forward 需要多少个折？
 
 建议至少 3-5 个折，覆盖不同市场环境：
+
 - 牛市
 - 熊市
 - 震荡市

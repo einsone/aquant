@@ -6,7 +6,7 @@
 
 aquant 通过 `BrokerAdapter` 抽象层支持实盘交易：
 
-```
+```text
 策略 → 信号 → 风控 → BrokerAdapter → 券商接口 → 真实市场
 ```
 
@@ -353,7 +353,8 @@ class EastMoneyAdapter(BrokerAdapter):
 
 ### 1. 回测与实盘差异
 
-**滑点**
+#### 滑点
+
 ```python
 # 回测中的理论价格
 backtest_price = bar.close
@@ -362,7 +363,8 @@ backtest_price = bar.close
 actual_price = bar.close * (1 + slippage)
 ```
 
-**成交延迟**
+#### 成交延迟
+
 ```python
 # 回测：信号立即成交
 # 实盘：订单提交后需要等待撮合
@@ -376,7 +378,8 @@ if status["filled"] < shares:
     pass
 ```
 
-**交易限制**
+#### 交易限制
+
 ```python
 # 回测：可以随意交易
 # 实盘：

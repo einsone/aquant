@@ -3,7 +3,8 @@
 提供策略性能的深度分析，包括归因分析、因子分解、周期分析等。
 """
 
-import numpy as np
+import math
+
 import pandas as pd
 import polars as pl
 
@@ -78,7 +79,7 @@ class StrategyAnalyzer:
         rolling_std = returns.rolling(window).std()
 
         # 年化
-        sharpe = (rolling_mean * 252) / (rolling_std * np.sqrt(252))
+        sharpe = (rolling_mean * 252) / (rolling_std * math.sqrt(252))
         return sharpe.dropna()
 
     def rolling_max_drawdown(self, window: int = 252) -> pd.Series:
@@ -132,8 +133,8 @@ class StrategyAnalyzer:
             "win_trades": len(wins),
             "loss_trades": len(losses),
             "win_rate": len(wins) / len(profits) if profits else 0.0,
-            "avg_win": np.mean(wins) if wins else 0.0,
-            "avg_loss": np.mean(losses) if losses else 0.0,
+            "avg_win": sum(wins) / len(wins) if wins else 0.0,
+            "avg_loss": sum(losses) / len(losses) if losses else 0.0,
             "profit_factor": sum(wins) / abs(sum(losses)) if losses and sum(losses) != 0 else 0.0,
         }
 
@@ -164,7 +165,7 @@ class StrategyAnalyzer:
         if not holding_periods:
             return {"avg_holding_days": 0, "min_holding_days": 0, "max_holding_days": 0}
 
-        return {"avg_holding_days": np.mean(holding_periods), "min_holding_days": min(holding_periods), "max_holding_days": max(holding_periods)}
+        return {"avg_holding_days": sum(holding_periods) / len(holding_periods), "min_holding_days": min(holding_periods), "max_holding_days": max(holding_periods)}
 
     def turnover_analysis(self) -> dict:
         """换手率分析

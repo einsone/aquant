@@ -17,6 +17,7 @@ from aquant.strategy.signal import Signal
 
 
 if TYPE_CHECKING:
+    from aquant.alert.notifier import AlertLevel, Notifier
     from aquant.risk.guard import RiskGuard
 
 
@@ -35,6 +36,7 @@ class LiveTradingEngine:
         trading_time: datetime_time = datetime_time(14, 30),  # 默认 14:30 交易
         max_daily_loss: float = 0.03,  # 日最大亏损 3%
         dry_run: bool = False,  # 是否为演练模式
+        notifier: "Notifier | None" = None,  # 告警通知器
     ):
         """
         Args:
@@ -45,6 +47,7 @@ class LiveTradingEngine:
             trading_time: 每日交易时间
             max_daily_loss: 日最大亏损比例
             dry_run: 演练模式（不实际下单）
+            notifier: 告警通知器
         """
         self.strategy = strategy
         self.broker = broker
@@ -53,6 +56,7 @@ class LiveTradingEngine:
         self.trading_time = trading_time
         self.max_daily_loss = max_daily_loss
         self.dry_run = dry_run
+        self.notifier = notifier
 
         self.daily_start_value = 0.0
         self.running = False
@@ -140,7 +144,9 @@ class LiveTradingEngine:
 
         except Exception as e:
             logger.error("交易执行失败", error=str(e))
-            self._send_alert(f"交易执行失败: {e}")
+            from aquant.alert import AlertLevel
+
+            self._send_alert(f"交易执行失败: {e}", level=AlertLevel.ERROR, error=str(e))
 
     def _build_context(self) -> Context:
         """构建策略上下文"""
@@ -226,7 +232,18 @@ class LiveTradingEngine:
         # 这是一个简化的实现
         return []
 
-    def _send_alert(self, message: str):
-        """发送告警"""
-        logger.warning("告警", message=message)
-        # TODO: 实现实际的告警机制（邮件、短信、钉钉等）
+    def _send_alert(self, message: str, level: "AlertLevel | None" = None, **context):
+        """发送告警
+
+        Args:
+            message: 告警消息
+            level: 告警级别，默认 WARNING
+            **context: 附加上下文信息
+        """
+        from aquant.alert import AlertLevel
+
+        level = level or AlertLevel.WARNING
+        logger.warning("告警", message=message, level=level.name, **context)
+
+        if self.notifier:
+            self.notifier.send(message, level=level, **context)

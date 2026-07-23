@@ -51,3 +51,11 @@
 [[overrides]]
     include = ["tests/test_grid_search.py", "tests/test_walk_forward.py"]
     rules   = { unresolved-attribute = "ignore" }
+
+[[overrides]]
+    include = ["aquant/tools/profiler.py"]
+    rules   = { unresolved-attribute = "ignore", invalid-assignment = "ignore" }
+
+[[overrides]]
+    include = ["aquant/tools/strategy_analyzer.py"]
+    rules   = { unresolved-import = "ignore" }

@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from aquant.tools.data_tools import DataCleaner, DataConverter, DataDownloader
     from aquant.tools.profiler import PerformanceProfiler, Timer, profile_function, time_function
     from aquant.tools.strategy_analyzer import StrategyAnalyzer
+    from aquant.tools.strategy_compare import StrategyComparison
 
 
 def __getattr__(name: str):
@@ -24,6 +25,11 @@ def __getattr__(name: str):
 
         return StrategyAnalyzer
 
+    if name == "StrategyComparison":
+        from aquant.tools.strategy_compare import StrategyComparison
+
+        return StrategyComparison
+
     if name in ("PerformanceProfiler", "Timer", "profile_function", "time_function"):
         from aquant.tools.profiler import PerformanceProfiler, Timer, profile_function, time_function
 
@@ -32,4 +38,4 @@ def __getattr__(name: str):
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
-__all__ = ["DataCleaner", "DataConverter", "DataDownloader", "PerformanceProfiler", "StrategyAnalyzer", "Timer", "profile_function", "time_function"]
+__all__ = ["DataCleaner", "DataConverter", "DataDownloader", "PerformanceProfiler", "StrategyAnalyzer", "StrategyComparison", "Timer", "profile_function", "time_function"]

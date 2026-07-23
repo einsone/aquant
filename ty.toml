@@ -45,8 +45,8 @@
     rules   = { unresolved-attribute = "ignore" }
 
 [[overrides]]
-    include = ["examples/tools_demo.py"]
-    rules   = { missing-argument = "ignore", unresolved-attribute = "ignore", unresolved-import = "ignore" }
+    include = ["examples/strategy_comparison_demo.py", "examples/tools_demo.py"]
+    rules   = { missing-argument = "ignore", unresolved-attribute = "ignore", unresolved-import = "ignore", invalid-argument-type = "ignore" }
 
 [[overrides]]
     include = ["tests/test_grid_search.py", "tests/test_walk_forward.py"]

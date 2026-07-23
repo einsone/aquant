@@ -27,32 +27,32 @@ class MyBrokerAdapter(BrokerAdapter):
     def get_cash(self) -> float:
         """查询可用资金"""
         pass
-    
+
     def get_position(self, symbol: str) -> int:
         """查询持仓数量"""
         pass
-    
+
     def buy(self, symbol: str, shares: int, price: float | None = None) -> str:
         """买入股票
-        
+
         Args:
             symbol: 股票代码
             shares: 股数
             price: 限价（None 表示市价）
-            
+
         Returns:
             订单 ID
         """
         pass
-    
+
     def sell(self, symbol: str, shares: int, price: float | None = None) -> str:
         """卖出股票"""
         pass
-    
+
     def cancel_order(self, order_id: str) -> bool:
         """撤销订单"""
         pass
-    
+
     def get_order_status(self, order_id: str) -> dict:
         """查询订单状态"""
         pass
@@ -99,7 +99,7 @@ import time as time_module
 
 class LiveTradingEngine:
     """实盘交易引擎"""
-    
+
     def __init__(
         self,
         strategy: Strategy,
@@ -111,14 +111,14 @@ class LiveTradingEngine:
         self.broker = broker
         self.data_source = data_source
         self.trading_time = trading_time
-    
+
     def run(self):
         """运行实盘交易"""
         print("实盘交易引擎启动")
-        
+
         while True:
             now = datetime.now()
-            
+
             # 判断是否为交易时间
             if self._is_trading_time(now):
                 self._execute_trading()
@@ -127,47 +127,47 @@ class LiveTradingEngine:
             else:
                 # 每分钟检查一次
                 time_module.sleep(60)
-    
+
     def _is_trading_time(self, now: datetime) -> bool:
         """判断是否为交易时间"""
         # 检查是否为工作日
         if now.weekday() >= 5:  # 周六日
             return False
-        
+
         # 检查时间
         current_time = now.time()
         return current_time.hour == self.trading_time.hour and \
                current_time.minute == self.trading_time.minute
-    
+
     def _execute_trading(self):
         """执行交易"""
         print(f"开始执行交易: {datetime.now()}")
-        
+
         try:
             # 构建上下文
             context = self._build_context()
-            
+
             # 调用策略生成信号
             signals = self.strategy.on_bar(context)
-            
+
             # 执行交易
             self._execute_signals(signals, context)
-            
+
             print("交易执行完成")
-            
+
         except Exception as e:
             print(f"交易执行失败: {e}")
-    
+
     def _build_context(self) -> Context:
         """构建策略上下文"""
         # 实现上下文构建逻辑
         # 需要提供查询接口，从 broker 获取持仓信息
         pass
-    
+
     def _execute_signals(self, signals: list[Signal], context: Context):
         """执行信号"""
         total_value = self.broker.get_cash()
-        
+
         # 计算当前持仓市值
         for symbol in self._get_all_symbols():
             position = self.broker.get_position(symbol)
@@ -176,7 +176,7 @@ class LiveTradingEngine:
                 bars = self.data_source.load_bars(date.today(), {symbol})
                 if symbol in bars:
                     total_value += position * bars[symbol].close
-        
+
         # 执行调仓
         target_positions = {}
         for signal in signals:
@@ -185,12 +185,12 @@ class LiveTradingEngine:
             if signal.symbol in bars:
                 target_shares = int(target_value / bars[signal.symbol].close)
                 target_positions[signal.symbol] = target_shares
-        
+
         # 下单
         for symbol, target_shares in target_positions.items():
             current_shares = self.broker.get_position(symbol)
             delta = target_shares - current_shares
-            
+
             if delta > 0:
                 # 买入
                 self.broker.buy(symbol=symbol, shares=delta)
@@ -199,7 +199,7 @@ class LiveTradingEngine:
                 # 卖出
                 self.broker.sell(symbol=symbol, shares=-delta)
                 print(f"卖出 {symbol}: {-delta} 股")
-    
+
     def _get_all_symbols(self) -> list[str]:
         """获取所有股票代码"""
         # 返回策略关注的股票池
@@ -221,7 +221,7 @@ from aquant.risk.guard import RiskGuard
 
 class SafeLiveTradingEngine(LiveTradingEngine):
     """带风控的实盘交易引擎"""
-    
+
     def __init__(
         self,
         strategy: Strategy,
@@ -234,35 +234,35 @@ class SafeLiveTradingEngine(LiveTradingEngine):
         self.risk_guards = risk_guards or []
         self.max_daily_loss = max_daily_loss
         self.daily_start_value = 0.0
-    
+
     def _execute_trading(self):
         """执行交易（带风控检查）"""
         # 记录日初资产
         if self.daily_start_value == 0:
             self.daily_start_value = self._get_total_value()
-        
+
         # 检查日内亏损
         current_value = self._get_total_value()
         daily_loss = (self.daily_start_value - current_value) / self.daily_start_value
-        
+
         if daily_loss > self.max_daily_loss:
             print(f"触发日最大亏损限制: {daily_loss * 100:.2f}%")
             return
-        
+
         # 执行正常交易流程
         super()._execute_trading()
-    
+
     def _get_total_value(self) -> float:
         """计算总资产"""
         total = self.broker.get_cash()
-        
+
         for symbol in self._get_all_symbols():
             position = self.broker.get_position(symbol)
             if position > 0:
                 bars = self.data_source.load_bars(date.today(), {symbol})
                 if symbol in bars:
                     total += position * bars[symbol].close
-        
+
         return total
 ```
 
@@ -276,25 +276,25 @@ import requests
 
 class EastMoneyAdapter(BrokerAdapter):
     """东方财富券商适配器（示例）"""
-    
+
     def __init__(self, account: str, password: str):
         self.account = account
         self.password = password
         self.session = self._login()
-    
+
     def _login(self) -> requests.Session:
         """登录券商系统"""
         session = requests.Session()
         # 实现登录逻辑
         # response = session.post("https://api.eastmoney.com/login", ...)
         return session
-    
+
     def get_cash(self) -> float:
         """查询可用资金"""
         response = self.session.get("https://api.eastmoney.com/account/cash")
         data = response.json()
         return data["available_cash"]
-    
+
     def get_position(self, symbol: str) -> int:
         """查询持仓数量"""
         response = self.session.get(
@@ -303,7 +303,7 @@ class EastMoneyAdapter(BrokerAdapter):
         )
         data = response.json()
         return data.get("shares", 0)
-    
+
     def buy(self, symbol: str, shares: int, price: float | None = None) -> str:
         """买入股票"""
         order_data = {
@@ -318,7 +318,7 @@ class EastMoneyAdapter(BrokerAdapter):
         )
         data = response.json()
         return data["order_id"]
-    
+
     def sell(self, symbol: str, shares: int, price: float | None = None) -> str:
         """卖出股票"""
         order_data = {
@@ -333,14 +333,14 @@ class EastMoneyAdapter(BrokerAdapter):
         )
         data = response.json()
         return data["order_id"]
-    
+
     def cancel_order(self, order_id: str) -> bool:
         """撤销订单"""
         response = self.session.post(
             f"https://api.eastmoney.com/trade/order/{order_id}/cancel"
         )
         return response.status_code == 200
-    
+
     def get_order_status(self, order_id: str) -> dict:
         """查询订单状态"""
         response = self.session.get(
@@ -390,18 +390,18 @@ if status["filled"] < shares:
 ```python
 class OrderManager:
     """订单管理器"""
-    
+
     def __init__(self, broker: BrokerAdapter):
         self.broker = broker
         self.pending_orders = {}
-    
+
     def submit_order(self, symbol: str, side: str, shares: int, price: float = None) -> str:
         """提交订单"""
         if side == "buy":
             order_id = self.broker.buy(symbol, shares, price)
         else:
             order_id = self.broker.sell(symbol, shares, price)
-        
+
         self.pending_orders[order_id] = {
             "symbol": symbol,
             "side": side,
@@ -409,28 +409,28 @@ class OrderManager:
             "price": price,
             "status": "pending",
         }
-        
+
         return order_id
-    
+
     def check_orders(self):
         """检查订单状态"""
         for order_id in list(self.pending_orders.keys()):
             status = self.broker.get_order_status(order_id)
-            
+
             if status["status"] == "filled":
                 # 订单已成交
                 print(f"订单 {order_id} 已成交")
                 del self.pending_orders[order_id]
-            
+
             elif status["status"] == "cancelled":
                 # 订单已撤销
                 print(f"订单 {order_id} 已撤销")
                 del self.pending_orders[order_id]
-            
+
             elif status["status"] == "partial_filled":
                 # 部分成交
                 print(f"订单 {order_id} 部分成交: {status['filled']}/{status['total']}")
-    
+
     def cancel_all_pending(self):
         """撤销所有未成交订单"""
         for order_id in list(self.pending_orders.keys()):
@@ -443,36 +443,36 @@ class OrderManager:
 ```python
 class RobustLiveTradingEngine(LiveTradingEngine):
     """健壮的实盘交易引擎"""
-    
+
     def _execute_trading(self):
         """执行交易（带异常处理）"""
         try:
             super()._execute_trading()
-        
+
         except ConnectionError as e:
             # 网络连接错误
             print(f"网络连接失败: {e}")
             self._send_alert("网络连接失败")
-        
+
         except Exception as e:
             # 其他错误
             print(f"交易执行异常: {e}")
             self._send_alert(f"交易异常: {e}")
-            
+
             # 紧急清仓（可选）
             if self._is_critical_error(e):
                 self._emergency_liquidate()
-    
+
     def _send_alert(self, message: str):
         """发送告警"""
         # 发送邮件、短信、钉钉等
         print(f"[告警] {message}")
-    
+
     def _is_critical_error(self, error: Exception) -> bool:
         """判断是否为严重错误"""
         # 根据错误类型判断
         return False
-    
+
     def _emergency_liquidate(self):
         """紧急清仓"""
         print("执行紧急清仓")
@@ -492,28 +492,28 @@ logger = structlog.get_logger()
 
 class LoggedLiveTradingEngine(LiveTradingEngine):
     """带日志的实盘交易引擎"""
-    
+
     def _execute_trading(self):
         """执行交易（带日志）"""
         logger.info("开始交易", timestamp=datetime.now())
-        
+
         # 记录账户状态
         cash = self.broker.get_cash()
         total_value = self._get_total_value()
-        
+
         logger.info(
             "账户状态",
             cash=f"{cash:,.2f}",
             total_value=f"{total_value:,.2f}",
         )
-        
+
         # 执行交易
         super()._execute_trading()
-        
+
         # 记录交易结果
         new_total_value = self._get_total_value()
         pnl = new_total_value - total_value
-        
+
         logger.info(
             "交易完成",
             pnl=f"{pnl:,.2f}",
@@ -590,43 +590,43 @@ engine.run()
 ```python
 class PerformanceMonitor:
     """实盘绩效监控"""
-    
+
     def __init__(self, broker: BrokerAdapter):
         self.broker = broker
         self.initial_value = 0.0
         self.peak_value = 0.0
-    
+
     def update(self):
         """更新监控指标"""
         current_value = self._get_total_value()
-        
+
         if self.initial_value == 0:
             self.initial_value = current_value
             self.peak_value = current_value
-        
+
         if current_value > self.peak_value:
             self.peak_value = current_value
-        
+
         # 计算指标
         total_return = (current_value - self.initial_value) / self.initial_value
         drawdown = (self.peak_value - current_value) / self.peak_value
-        
+
         logger.info(
             "实盘监控",
             current_value=f"{current_value:,.2f}",
             total_return=f"{total_return * 100:.2f}%",
             drawdown=f"{drawdown * 100:.2f}%",
         )
-        
+
         # 告警检查
         if drawdown > 0.10:
             self._send_alert(f"回撤达到 {drawdown * 100:.2f}%")
-    
+
     def _get_total_value(self) -> float:
         """计算总资产"""
         # 实现逻辑
         return 0.0
-    
+
     def _send_alert(self, message: str):
         """发送告警"""
         print(f"[告警] {message}")

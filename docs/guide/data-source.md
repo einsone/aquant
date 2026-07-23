@@ -14,47 +14,47 @@ from aquant.market.bar import DayBar
 class MyDataSource(DataSource):
     def load_calendar(self, start: date, end: date) -> list[date]:
         """加载交易日历
-        
+
         Args:
             start: 开始日期
             end: 结束日期
-            
+
         Returns:
             交易日列表（升序）
         """
         pass
-    
+
     def load_bars(self, dt: date, symbols: set[str]) -> dict[str, DayBar]:
         """加载指定日期的行情数据
-        
+
         Args:
             dt: 日期
             symbols: 股票代码集合
-            
+
         Returns:
             股票代码 -> DayBar 的字典
         """
         pass
-    
+
     def load_adjustments(self, start: date, end: date):
         """加载企业行动（分红、送转）
-        
+
         Args:
             start: 开始日期
             end: 结束日期
-            
+
         Returns:
             调整事件列表
         """
         return []
-    
+
     def load_delisted(self, start: date, end: date):
         """加载退市信息
-        
+
         Args:
             start: 开始日期
             end: 结束日期
-            
+
         Returns:
             退市信息字典
         """
@@ -121,21 +121,21 @@ import psycopg2
 class PostgreSQLDataSource(DataSource):
     def __init__(self, conn_string: str):
         self.conn = psycopg2.connect(conn_string)
-    
+
     def load_calendar(self, start: date, end: date) -> list[date]:
         """从数据库加载交易日历"""
         with self.conn.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT DISTINCT trade_date 
-                FROM trading_calendar 
-                WHERE trade_date BETWEEN %s AND %s 
+                SELECT DISTINCT trade_date
+                FROM trading_calendar
+                WHERE trade_date BETWEEN %s AND %s
                 ORDER BY trade_date
                 """,
                 (start, end)
             )
             return [row[0] for row in cursor.fetchall()]
-    
+
     def load_bars(self, dt: date, symbols: set[str]) -> dict[str, DayBar]:
         """从数据库加载行情数据"""
         with self.conn.cursor() as cursor:
@@ -147,7 +147,7 @@ class PostgreSQLDataSource(DataSource):
                 """,
                 (dt, list(symbols))
             )
-            
+
             bars = {}
             for row in cursor.fetchall():
                 symbol, open_, high, low, close, volume, amount = row
@@ -162,7 +162,7 @@ class PostgreSQLDataSource(DataSource):
                     amount=amount,
                 )
             return bars
-    
+
     def load_adjustments(self, start: date, end: date):
         """加载企业行动"""
         with self.conn.cursor() as cursor:
@@ -175,7 +175,7 @@ class PostgreSQLDataSource(DataSource):
                 (start, end)
             )
             return cursor.fetchall()
-    
+
     def load_delisted(self, start: date, end: date):
         """加载退市信息"""
         with self.conn.cursor() as cursor:
@@ -202,7 +202,7 @@ class TushareDataSource(DataSource):
     def __init__(self, token: str):
         ts.set_token(token)
         self.pro = ts.pro_api()
-    
+
     def load_calendar(self, start: date, end: date) -> list[date]:
         """从 Tushare 加载交易日历"""
         df = self.pro.trade_cal(
@@ -215,21 +215,21 @@ class TushareDataSource(DataSource):
             date.fromisoformat(d[:4] + '-' + d[4:6] + '-' + d[6:8])
             for d in df['cal_date'].tolist()
         ]
-    
+
     def load_bars(self, dt: date, symbols: set[str]) -> dict[str, DayBar]:
         """从 Tushare 加载行情数据"""
         bars = {}
         date_str = dt.strftime('%Y%m%d')
-        
+
         for symbol in symbols:
             # Tushare 股票代码格式转换
             ts_code = self._convert_symbol(symbol)
-            
+
             df = self.pro.daily(
                 ts_code=ts_code,
                 trade_date=date_str
             )
-            
+
             if not df.empty:
                 row = df.iloc[0]
                 bars[symbol] = DayBar(
@@ -242,12 +242,12 @@ class TushareDataSource(DataSource):
                     volume=row['vol'] * 100,  # 手转股
                     amount=row['amount'] * 1000,  # 千元转元
                 )
-        
+
         return bars
-    
+
     def _convert_symbol(self, symbol: str) -> str:
         """转换股票代码格式
-        
+
         aquant: 000001.SZ
         tushare: 000001.SZ (相同)
         """
@@ -266,7 +266,7 @@ import pandas as pd
 class AKShareDataSource(DataSource):
     def __init__(self):
         self._calendar_cache = None
-    
+
     def load_calendar(self, start: date, end: date) -> list[date]:
         """从 AKShare 加载交易日历"""
         if self._calendar_cache is None:
@@ -276,17 +276,17 @@ class AKShareDataSource(DataSource):
                 pd.to_datetime(d).date()
                 for d in df['trade_date'].tolist()
             ]
-        
+
         return [
             d for d in self._calendar_cache
             if start <= d <= end
         ]
-    
+
     def load_bars(self, dt: date, symbols: set[str]) -> dict[str, DayBar]:
         """从 AKShare 加载行情数据"""
         bars = {}
         date_str = dt.strftime('%Y%m%d')
-        
+
         for symbol in symbols:
             try:
                 # 获取历史行情
@@ -296,7 +296,7 @@ class AKShareDataSource(DataSource):
                     end_date=date_str,
                     adjust="qfq"  # 前复权
                 )
-                
+
                 if not df.empty:
                     row = df.iloc[0]
                     bars[symbol] = DayBar(
@@ -312,12 +312,12 @@ class AKShareDataSource(DataSource):
             except Exception as e:
                 # 跳过获取失败的股票
                 continue
-        
+
         return bars
-    
+
     def _convert_symbol(self, symbol: str) -> str:
         """转换股票代码格式
-        
+
         aquant: 000001.SZ, 600000.SH
         akshare: 000001, 600000
         """
@@ -338,20 +338,20 @@ class CachedDataSource(DataSource):
     def __init__(self, underlying: DataSource):
         self.underlying = underlying
         self._bars_cache = {}
-    
+
     @lru_cache(maxsize=1)
     def load_calendar(self, start: date, end: date) -> list[date]:
         """缓存交易日历"""
         return self.underlying.load_calendar(start, end)
-    
+
     def load_bars(self, dt: date, symbols: set[str]) -> dict[str, DayBar]:
         """缓存行情数据"""
         # 将 set 转为 frozenset 用于缓存键
         cache_key = (dt, frozenset(symbols))
-        
+
         if cache_key not in self._bars_cache:
             self._bars_cache[cache_key] = self.underlying.load_bars(dt, symbols)
-        
+
         return self._bars_cache[cache_key]
 
 # 使用
@@ -372,17 +372,17 @@ class PreloadedDataSource(DataSource):
     def __init__(self, underlying: DataSource):
         self.underlying = underlying
         self._preloaded_bars = {}
-    
+
     def preload(self, start: date, end: date, symbols: set[str]):
         """预加载数据"""
         calendar = self.underlying.load_calendar(start, end)
-        
+
         for dt in calendar:
             self._preloaded_bars[dt] = self.underlying.load_bars(dt, symbols)
-    
+
     def load_calendar(self, start: date, end: date) -> list[date]:
         return self.underlying.load_calendar(start, end)
-    
+
     def load_bars(self, dt: date, symbols: set[str]) -> dict[str, DayBar]:
         """从预加载的数据中读取"""
         if dt in self._preloaded_bars:
@@ -416,13 +416,13 @@ logger = structlog.get_logger()
 class ValidatedDataSource(DataSource):
     def __init__(self, underlying: DataSource):
         self.underlying = underlying
-    
+
     def load_calendar(self, start: date, end: date) -> list[date]:
         return self.underlying.load_calendar(start, end)
-    
+
     def load_bars(self, dt: date, symbols: set[str]) -> dict[str, DayBar]:
         bars = self.underlying.load_bars(dt, symbols)
-        
+
         # 检查数据质量
         for symbol, bar in bars.items():
             if not self._is_valid(bar):
@@ -434,31 +434,31 @@ class ValidatedDataSource(DataSource):
                 )
                 # 移除无效数据
                 del bars[symbol]
-        
+
         return bars
-    
+
     def _is_valid(self, bar: DayBar) -> bool:
         """检查 DayBar 是否有效"""
         # 价格必须为正
         if bar.open <= 0 or bar.close <= 0:
             return False
-        
+
         # 最高价 >= 最低价
         if bar.high < bar.low:
             return False
-        
+
         # 最高价 >= 开盘价/收盘价
         if bar.high < max(bar.open, bar.close):
             return False
-        
+
         # 最低价 <= 开盘价/收盘价
         if bar.low > min(bar.open, bar.close):
             return False
-        
+
         # 成交量必须为正
         if bar.volume < 0:
             return False
-        
+
         return True
 ```
 
@@ -473,21 +473,21 @@ from aquant.market.bar import DayBar, AssetType
 
 class NormalizedDataSource(DataSource):
     """归一化数据源，统一股票代码格式"""
-    
+
     def __init__(self, underlying: DataSource, format: str = "wind"):
         self.underlying = underlying
         self.format = format  # "wind", "tushare", "akshare"
-    
+
     def load_calendar(self, start: date, end: date) -> list[date]:
         return self.underlying.load_calendar(start, end)
-    
+
     def load_bars(self, dt: date, symbols: set[str]) -> dict[str, DayBar]:
         # 转换股票代码格式
         converted_symbols = {self._convert_to_source(s) for s in symbols}
-        
+
         # 加载数据
         bars = self.underlying.load_bars(dt, converted_symbols)
-        
+
         # 转回标准格式
         normalized_bars = {}
         for source_symbol, bar in bars.items():
@@ -503,15 +503,15 @@ class NormalizedDataSource(DataSource):
                 amount=bar.amount,
                 asset_type=bar.asset_type,
             )
-        
+
         return normalized_bars
-    
+
     def _convert_to_source(self, symbol: str) -> str:
         """标准格式 -> 数据源格式"""
         if self.format == "akshare":
             return symbol.split('.')[0]  # 000001.SZ -> 000001
         return symbol
-    
+
     def _convert_to_standard(self, symbol: str) -> str:
         """数据源格式 -> 标准格式"""
         if self.format == "akshare":
@@ -552,7 +552,7 @@ def load_bars(self, dt: date, symbols: set[str]) -> dict[str, DayBar]:
 class VersionedDataSource(DataSource):
     def __init__(self, version: str = "v1"):
         self.version = version
-    
+
     def load_bars(self, dt: date, symbols: set[str]) -> dict[str, DayBar]:
         # 根据版本加载不同的数据
         if self.version == "v1":

@@ -44,13 +44,13 @@ from aquant import Strategy, Signal, Context
 class MyStrategy(Strategy):
     warmup_period = 20  # 预热期：需要多少天历史数据
     rebalance_mode = "replace"  # 调仓模式：replace 或 incremental
-    
+
     def on_bar(self, context: Context) -> list[Signal]:
         """每个交易日调用一次
-        
+
         Args:
             context: 上下文对象，提供查询接口
-            
+
         Returns:
             信号列表，每个信号包含 symbol 和 weight
         """
@@ -88,16 +88,16 @@ Signal(symbol="000001.SZ", weight=0.3)
 def on_bar(self, context: Context) -> list[Signal]:
     # 当前日期
     today = context.current_date
-    
+
     # 查询历史行情
     bars = context.query.get_bars(symbol="000001.SZ", count=20)
-    
+
     # 查询当前持仓
     position = context.query.get_position("000001.SZ")
-    
+
     # 查询可用资金
     cash = context.query.get_cash()
-    
+
     # 查询总资产
     total_value = context.query.get_total_value()
 ```
@@ -122,7 +122,7 @@ class MyDataSource(DataSource):
     def load_calendar(self, start: date, end: date) -> list[date]:
         """加载交易日历"""
         return [date(2023, 1, 3), date(2023, 1, 4), ...]
-    
+
     def load_bars(self, dt: date, symbols: set[str]) -> dict[str, DayBar]:
         """加载指定日期的行情数据"""
         return {
@@ -136,11 +136,11 @@ class MyDataSource(DataSource):
                 volume=1000000,
             )
         }
-    
+
     def load_adjustments(self, start: date, end: date):
         """加载企业行动（分红、送转）"""
         return []
-    
+
     def load_delisted(self, start: date, end: date):
         """加载退市信息"""
         return {}
@@ -161,7 +161,7 @@ from aquant.risk.guard import RiskGuard
 class MyRiskGuard(RiskGuard):
     def check(self, signal: Signal, context: Context) -> bool:
         """检查信号是否符合风控规则
-        
+
         Returns:
             True：允许交易
             False：拒绝交易
@@ -319,7 +319,7 @@ class MyStrategy(Strategy):
     def on_bar(self, context: Context) -> list[Signal]:
         # 返回错误类型会在编译期报错
         return "wrong type"  # ❌ 类型错误
-        
+
         return [Signal(symbol="000001.SZ", weight=0.5)]  # ✅ 正确
 ```
 

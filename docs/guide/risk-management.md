@@ -78,11 +78,11 @@ from aquant.core.context import Context
 class CustomRiskGuard(RiskGuard):
     def check(self, signal: Signal, context: Context) -> bool:
         """检查信号是否符合风控规则
-        
+
         Args:
             signal: 策略生成的信号
             context: 上下文对象
-            
+
         Returns:
             True: 允许交易
             False: 拒绝交易
@@ -111,26 +111,26 @@ class SectorConcentrationGuard(RiskGuard):
         """
         self.sector_map = sector_map
         self.max_sector_weight = max_sector_weight
-    
+
     def check(self, signal: Signal, context: Context) -> bool:
         # 获取该股票的行业
         sector = self.sector_map.get(signal.symbol)
         if sector is None:
             return True
-        
+
         # 计算该行业当前总仓位
         sector_weight = 0.0
         for symbol, position in context.query.get_all_positions().items():
             if self.sector_map.get(symbol) == sector:
                 sector_weight += position / context.query.get_total_value()
-        
+
         # 加上新信号的权重
         new_sector_weight = sector_weight + signal.weight
-        
+
         # 检查是否超过限制
         if new_sector_weight > self.max_sector_weight:
             return False
-        
+
         return True
 
 # 使用
@@ -163,22 +163,22 @@ class TurnoverGuard(RiskGuard):
         self.max_turnover = max_turnover
         self.daily_turnover = 0.0
         self.last_date = None
-    
+
     def check(self, signal: Signal, context: Context) -> bool:
         # 新的一天，重置计数
         if self.last_date != context.current_date:
             self.daily_turnover = 0.0
             self.last_date = context.current_date
-        
+
         # 计算本次交易的换手量
         current_position = context.query.get_position(signal.symbol)
         current_weight = current_position / context.query.get_total_value()
         turnover = abs(signal.weight - current_weight)
-        
+
         # 检查累计换手是否超限
         if self.daily_turnover + turnover > self.max_turnover:
             return False
-        
+
         # 更新累计换手
         self.daily_turnover += turnover
         return True
@@ -200,7 +200,7 @@ class TradingTimeGuard(RiskGuard):
             allowed_hours: 允许交易的小时列表，None 表示不限制
         """
         self.allowed_hours = allowed_hours or list(range(24))
-    
+
     def check(self, signal: Signal, context: Context) -> bool:
         # 注意：日线回测中没有具体时间，这个示例仅供参考
         # 实际使用时需要根据具体场景调整
@@ -220,48 +220,48 @@ from aquant import Strategy, Signal, Context
 class StopLossStrategy(Strategy):
     warmup_period = 20
     rebalance_mode = "replace"
-    
+
     def __init__(self, symbol: str):
         self.symbol = symbol
         self.entry_price = None
         self.stop_loss = 0.05  # 5% 止损
         self.take_profit = 0.10  # 10% 止盈
-    
+
     def on_bar(self, context: Context) -> list[Signal]:
         bars = context.query.get_bars(symbol=self.symbol, count=self.warmup_period)
-        
+
         if len(bars) < self.warmup_period:
             return []
-        
+
         current_price = bars[-1].close
         position = context.query.get_position(self.symbol)
-        
+
         # 有持仓：检查止损止盈
         if position > 0:
             if self.entry_price is None:
                 # 回测重启后恢复入场价
                 self.entry_price = current_price
-            
+
             profit_rate = (current_price - self.entry_price) / self.entry_price
-            
+
             # 触发止损
             if profit_rate < -self.stop_loss:
                 self.entry_price = None
                 return []  # 清仓
-            
+
             # 触发止盈
             if profit_rate > self.take_profit:
                 self.entry_price = None
                 return []  # 清仓
-        
+
         # 无持仓：寻找入场机会
         else:
             if self._should_enter(bars):
                 self.entry_price = current_price
                 return [Signal(symbol=self.symbol, weight=1.0)]
-        
+
         return []
-    
+
     def _should_enter(self, bars: list) -> bool:
         # 入场逻辑
         return True
@@ -275,35 +275,35 @@ from aquant import Strategy, Signal, Context
 class DrawdownControlStrategy(Strategy):
     warmup_period = 20
     rebalance_mode = "replace"
-    
+
     def __init__(self):
         self.max_drawdown = 0.15  # 15% 最大回撤
         self.peak_value = 0.0
         self.stopped = False
-    
+
     def on_bar(self, context: Context) -> list[Signal]:
         current_value = context.query.get_total_value()
-        
+
         # 更新峰值
         if current_value > self.peak_value:
             self.peak_value = current_value
-        
+
         # 计算当前回撤
         if self.peak_value > 0:
             drawdown = (self.peak_value - current_value) / self.peak_value
-            
+
             # 回撤超过阈值，停止交易
             if drawdown > self.max_drawdown:
                 self.stopped = True
                 return []  # 清仓并停止交易
-        
+
         # 已停止交易
         if self.stopped:
             return []
-        
+
         # 正常交易逻辑
         return self._generate_signals(context)
-    
+
     def _generate_signals(self, context: Context) -> list[Signal]:
         # 实现选股逻辑
         return []
@@ -321,33 +321,33 @@ from aquant import Strategy, Signal, Context
 class KellyPositionStrategy(Strategy):
     warmup_period = 20
     rebalance_mode = "replace"
-    
+
     def __init__(self, symbol: str):
         self.symbol = symbol
         self.win_rate = 0.6  # 预估胜率
         self.avg_win = 0.15  # 平均盈利
         self.avg_loss = 0.08  # 平均亏损
-    
+
     def on_bar(self, context: Context) -> list[Signal]:
         bars = context.query.get_bars(symbol=self.symbol, count=self.warmup_period)
-        
+
         if len(bars) < self.warmup_period:
             return []
-        
+
         # 凯利公式：f = (p * b - q) / b
         # p: 胜率, q: 败率, b: 赔率（盈亏比）
         p = self.win_rate
         q = 1 - p
         b = self.avg_win / self.avg_loss
-        
+
         kelly_fraction = (p * b - q) / b
-        
+
         # 限制仓位在 0-100% 之间
         kelly_fraction = max(0, min(1, kelly_fraction))
-        
+
         # 保守起见，使用半凯利
         position_size = kelly_fraction * 0.5
-        
+
         if position_size > 0:
             return [Signal(symbol=self.symbol, weight=position_size)]
         return []
@@ -363,47 +363,47 @@ from aquant import Strategy, Signal, Context
 class VolatilityParityStrategy(Strategy):
     warmup_period = 60
     rebalance_mode = "replace"
-    
+
     def __init__(self, universe: list[str]):
         self.universe = universe
         self.target_volatility = 0.15  # 目标组合波动率
-    
+
     def on_bar(self, context: Context) -> list[Signal]:
         volatilities = {}
-        
+
         # 计算各股票波动率
         for symbol in self.universe:
             bars = context.query.get_bars(symbol=symbol, count=self.warmup_period)
             if len(bars) == self.warmup_period:
                 vol = self._calc_volatility(bars)
                 volatilities[symbol] = vol
-        
+
         if not volatilities:
             return []
-        
+
         # 计算等波动率权重
         signals = []
         total_inv_vol = sum(1 / v for v in volatilities.values())
-        
+
         for symbol, vol in volatilities.items():
             # 权重与波动率成反比
             weight = (1 / vol) / total_inv_vol
             signals.append(Signal(symbol=symbol, weight=weight))
-        
+
         return signals
-    
+
     def _calc_volatility(self, bars: list) -> float:
         """计算年化波动率"""
         returns = []
         for i in range(1, len(bars)):
             ret = (bars[i].close - bars[i-1].close) / bars[i-1].close
             returns.append(ret)
-        
+
         avg_return = sum(returns) / len(returns)
         variance = sum((r - avg_return) ** 2 for r in returns) / len(returns)
         daily_vol = variance ** 0.5
         annual_vol = daily_vol * (252 ** 0.5)  # 年化
-        
+
         return annual_vol
 ```
 
@@ -438,27 +438,27 @@ logger = structlog.get_logger()
 class MonitoredStrategy(Strategy):
     warmup_period = 20
     rebalance_mode = "replace"
-    
+
     def __init__(self):
         self.initial_capital = 0.0
         self.peak_value = 0.0
-    
+
     def on_bar(self, context: Context) -> list[Signal]:
         current_value = context.query.get_total_value()
-        
+
         # 首次初始化
         if self.initial_capital == 0:
             self.initial_capital = current_value
             self.peak_value = current_value
-        
+
         # 更新峰值
         if current_value > self.peak_value:
             self.peak_value = current_value
-        
+
         # 计算关键指标
         total_return = (current_value - self.initial_capital) / self.initial_capital
         drawdown = (self.peak_value - current_value) / self.peak_value if self.peak_value > 0 else 0
-        
+
         # 记录监控信息
         logger.info(
             "风控监控",
@@ -468,10 +468,10 @@ class MonitoredStrategy(Strategy):
             drawdown=f"{drawdown * 100:.2f}%",
             cash=f"{context.query.get_cash():,.0f}",
         )
-        
+
         # 生成信号
         return self._generate_signals(context)
-    
+
     def _generate_signals(self, context: Context) -> list[Signal]:
         return []
 ```
@@ -505,15 +505,15 @@ config = BacktestConfig(
 ```python
 class GradualStopLoss(Strategy):
     """渐进式止损：持仓时间越长，止损线越高"""
-    
+
     def __init__(self):
         self.entry_date = None
         self.entry_price = None
-    
+
     def on_bar(self, context):
         if self.entry_date:
             days_held = (context.current_date - self.entry_date).days
-            
+
             # 止损线随时间提升
             if days_held < 5:
                 stop_loss = 0.05  # 5%
